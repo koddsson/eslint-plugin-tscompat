@@ -1,0 +1,27 @@
+{
+  "name": "lint-types-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "mocha --require fixture.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@eslint/js": "^8.57.0",
+    "@mdn/browser-compat-data": "^5.5.18",
+    "ast-metadata-inferer": "^0.8.0",
+    "browserslist": "^4.23.0",
+    "eslint": "^8.57.0",
+    "semver": "^7.6.0",
+    "typescript": "^5.4.3",
+    "typescript-eslint": "^7.4.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/rule-tester": "^7.4.0",
+    "mocha": "^10.4.0"
+  }
+}
