@@ -929,6 +929,7 @@ ruleTester.run("tscompat", tscompat, {
           browserslist: ["chrome 23"],
         },
       ],
+      only: true
     },
   ],
 });

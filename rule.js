@@ -20,7 +20,7 @@ function getConstrainedTypeAtLocation(services, node) {
   return constrained ?? nodeType;
 }
 
-function isSupported({ support, browserTargets }) {
+function getFailures({ support, browserTargets }) {
   const supportFailures = [];
   for (const [name, version] of Object.entries(browserTargets)) {
     let browserSupport = support[name];
@@ -118,6 +118,14 @@ function findSupport({ typeName, calleeName }) {
   return support;
 }
 
+function formatBrowserList() {
+
+  return failures
+            .sort((a, b) => b.name.localeCompare(a.name))
+            .map((x) => `${mdnNamesToHuman[x.name]} ${x.version}`)
+            .join(", ");
+}
+
 export const tscompat = createRule({
   create(context) {
     const services = ESLintUtils.getParserServices(context);
@@ -128,51 +136,23 @@ export const tscompat = createRule({
 
     return {
       MemberExpression(node) {
-        let failingSupport = [];
-        let typeName;
-
-        // Extract type from `NewExpression`.
-        if (node.object.type === "NewExpression") {
-          typeName =
-            node.object.callee.name || node.object.callee.property.name;
-        } else {
-          const type = getConstrainedTypeAtLocation(services, node.object);
-          const [tsType] = Object.entries(ts.TypeFlags).find(
-            ([key, value]) => value === type.flags,
-          );
-
-          typeName =
-            type.symbol?.escapedName ||
-            node.object.name ||
-            tsType.replace("Literal", "");
-        }
-
-        typeName = getTypeName(
+        let typeName = getTypeName(
           checker,
           getConstrainedTypeAtLocation(services, node.object),
         )
           .replace("Constructor", "")
           .replace("<unknown>", "");
 
-        if (typeName === "any") return;
+        console.log(Object.keys(getConstrainedTypeAtLocation(services, node.object)));
+        console.log(getTypeName(checker, getConstrainedTypeAtLocation(services, node.object).types[0]));
+        console.log(typeName)
 
-        const calleeName = node.property.name;
-
-        typeName = typeName.replace("Constructor", "");
-
-        const support =
-          typeName === "globalThis"
-            ? bcd.api[calleeName]?.__compat?.support
-            : findSupport({ typeName, calleeName });
 
         const browserTargets = findBrowserTargets(browsers);
-        failingSupport = isSupported({ support, browserTargets });
+        const failures = getFailures({ support, browserTargets });
 
-        if (failingSupport.length) {
-          const humanReadableBrowsers = failingSupport
-            .sort((a, b) => b.name.localeCompare(a.name))
-            .map((x) => `${mdnNamesToHuman[x.name]} ${x.version}`)
-            .join(", ");
+        if (failures.length) {
+          const humanReadableBrowsers = formatBrowserList(failures);
 
           context.report({
             message: `${typeName}.${calleeName}() is not supported in ${humanReadableBrowsers}`,
@@ -180,68 +160,8 @@ export const tscompat = createRule({
           });
         }
       },
-      NewExpression(node) {
-        const type = getConstrainedTypeAtLocation(services, node);
-        const typeName = getTypeName(
-          checker,
-          services.getTypeAtLocation(node.callee),
-        ).replace("Constructor", "");
-
-        return;
-
-        const support =
-          bcd.api[typeName]?.__compat.support ||
-          bcd.javascript.builtins[typeName].__compat.support;
-
-        for (let [key, value] of Object.entries(support)) {
-          if (Array.isArray(value)) {
-            value = value.find((x) => !x.prefix);
-          }
-          value.version_added = value.version_added || Infinity;
-
-          if (value.version_added !== Infinity) {
-            support[key] = {
-              // For _some_ reason the dataset has these unicode characters.
-              version_added: value.version_added.replace("≤", ""),
-            };
-          }
-        }
-
-        const browserTargets = findBrowserTargets(browsers);
-        const failingSupport = isSupported({ support, browserTargets });
-
-        if (failingSupport.length) {
-          const browsers = failingSupport
-            .sort((a, b) => b.name.localeCompare(a.name))
-            .map((x) => `${capitalize(x.name)} ${x.version}`)
-            .join(", ");
-          context.report({
-            message: `${typeName} is not supported in ${browsers}`,
-            node,
-          });
-        }
-      },
-      CallExpression(node) {
-        let failingSupport = [];
-        // TODO: This should probably be a member expression?
-        if (!node.callee.object) {
-          const typeName = node.callee.name;
-          const support = bcd.api[typeName]?.__compat?.support;
-
-          const browserTargets = findBrowserTargets(browsers);
-          failingSupport = isSupported({ support, browserTargets });
-
-          const humanReadableBrowsers = failingSupport
-            .sort((a, b) => b.name.localeCompare(a.name))
-            .map((x) => `${mdnNamesToHuman[x.name]} ${x.version}`)
-            .join(", ");
-
-          context.report({
-            message: `${typeName}() is not supported in ${humanReadableBrowsers}`,
-            node,
-          });
-        }
-      },
+      NewExpression(node) { },
+      CallExpression(node) { },
     };
   },
   meta: {
