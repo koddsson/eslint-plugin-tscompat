@@ -24,4 +24,4 @@ export const invalid = tests.invalid.map(({code, settings, errors})=> {
   }
 });
 
-console.log(JSON.stringify(invalid, null, 2));
+console.log(JSON.stringify(valid, null, 2));

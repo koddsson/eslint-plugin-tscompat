@@ -24,11 +24,7 @@ function isSupported({ support, browserTargets }) {
   for (const [name, version] of Object.entries(browserTargets)) {
     let browserSupport = support[name];
     if (!browserSupport) continue;
-    if (Array.isArray(browserSupport)) {
-      browserSupport = browserSupport.find((x) => !x.prefix);
-    }
-    const supportedSince =
-      Number.parseFloat(browserSupport?.version_added) || Infinity;
+    const supportedSince = Number.parseFloat(browserSupport?.version_added);
     if (version < supportedSince) {
       supportFailures.push({ name, version, supportedSince });
     }
@@ -101,6 +97,20 @@ function findSupport({ typeName, calleeName }) {
     support = bcd.javascript.builtins[typeName][calleeName].__compat.support;
   }
 
+  for (let [key, value] of Object.entries(support)) {
+    if (Array.isArray(value)) {
+      value = value.find((x) => !x.prefix);
+    }
+    value.version_added = value.version_added || Infinity;
+
+    if (value.version_added !== Infinity) {
+      support[key] = {
+        // For _some_ reason the dataset has these unicode characters.
+        version_added: value.version_added.replace('≤', "")
+      }
+    }
+  }
+
   return support;
 }
 
@@ -140,10 +150,12 @@ export const tscompat = createRule({
           typeName === "globalThis"
             ? bcd.api[calleeName]?.__compat?.support
             : findSupport({ typeName, calleeName });
-  
+
         const browserTargets = findBrowserTargets(browsers);
         failingSupport = isSupported({ support, browserTargets });
-        
+
+        console.log({typeName, calleeName, browserTargets, failingSupport})
+
         if (failingSupport.length) {
           const humanReadableBrowsers = failingSupport
             .sort((a, b) => b.name.localeCompare(a.name))
@@ -160,7 +172,23 @@ export const tscompat = createRule({
         const type = getConstrainedTypeAtLocation(services, node);
         const typeName = type.symbol?.escapedName || node.callee.name;
 
-        const support = bcd.api[typeName]?.__compat.support || bcd.javascript.builtins[typeName].__compat.support;
+        const support = 
+          bcd.api[typeName]?.__compat.support || bcd.javascript.builtins[typeName].__compat.support;
+
+        for (let [key, value] of Object.entries(support)) {
+          if (Array.isArray(value)) {
+            value = value.find((x) => !x.prefix);
+          }
+          value.version_added = value.version_added || Infinity;
+
+          if (value.version_added !== Infinity) {
+            support[key] = {
+              // For _some_ reason the dataset has these unicode characters.
+              version_added: value.version_added.replace('≤', "")
+            }
+          }
+        }
+
         const browserTargets = findBrowserTargets(browsers);
         const failingSupport = isSupported({ support, browserTargets });
 

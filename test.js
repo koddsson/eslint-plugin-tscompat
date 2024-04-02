@@ -25,6 +25,302 @@ ruleTester.run("tscompat", tscompat, {
       options: [{ browserslist: browserslist.defaults }],
       skip: true,
     },
+    {
+      code: "Array.from()",
+      options: [
+        {
+          browserslist: ["ExplorerMobile 10"],
+        },
+      ],
+    },
+    {
+      code: "if (fetch) {\n          fetch()\n        }",
+      options: [
+        {
+          browserslist: ["ExplorerMobile 10"],
+        },
+      ],
+    },
+    {
+      code: "if (Array.prototype.flat) {\n          new Array.flat()\n        }",
+      options: [
+        {
+          browserslist: ["ExplorerMobile 10"],
+        },
+      ],
+    },
+    {
+      code: "if (fetch && otherConditions) {\n          fetch()\n        }",
+      options: [
+        {
+          browserslist: ["ExplorerMobile 10"],
+        },
+      ],
+    },
+    {
+      code: "if (window.fetch) {\n          fetch()\n        }",
+      options: [
+        {
+          browserslist: ["ExplorerMobile 10"],
+        },
+      ],
+    },
+    {
+      code: "if ('fetch' in window) {\n          fetch()\n        }",
+      options: [
+        {
+          browserslist: ["ExplorerMobile 10"],
+        },
+      ],
+    },
+    {
+      code: "window",
+      options: [
+        {
+          browserslist: ["ExplorerMobile 10"],
+        },
+      ],
+    },
+    {
+      code: "document.fonts()",
+      options: [
+        {
+          browserslist: ["edge 79"],
+        },
+      ],
+    },
+    {
+      code: "import { Set } from 'immutable';\n        new Set();",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "const { Set } = require('immutable');\n        new Set();",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "const { Set } = require('immutable');\n        new Set();",
+      options: [
+        {
+          browserslist: ["current node"],
+        },
+      ],
+    },
+    {
+      code: "const { Set } = require('immutable');\n        new Set();",
+      options: [
+        {
+          browserslist: ["chrome 37", "current node"],
+        },
+      ],
+    },
+    {
+      code: "const Set = require('immutable').Set;\n        new Set();",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "Promise.resolve()",
+      options: [
+        {
+          browserslist: ["node 10"],
+        },
+      ],
+    },
+    {
+      code: "const { Set } = require('immutable');\n        (() => {\n          new Set();\n        })();",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "import Set from 'immutable';\n        new Set();",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "function Set() {}\n        new Set();",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "const Set = () => {};\n        new Set();",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "const bar = () => {\n          const Set = () => {};\n          new Set();\n        }",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "const bar = () => {\n          class Set {}\n          new Set()\n        }",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "const bar = () => {\n          const Set = {}\n          new Set()\n        }",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "const bar = () => {\n          function Set() {}\n          new Set()\n        }",
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "document.documentElement()",
+      options: [
+        {
+          browserslist: ["Safari 11", "Opera 57", "Edge 17"],
+        },
+      ],
+    },
+    {
+      code: "document.getElementsByTagName()",
+      options: [
+        {
+          browserslist: ["Safari 11", "Opera 57", "Edge 17"],
+        },
+      ],
+    },
+    {
+      code: 'Promise.resolve("foo")',
+      options: [
+        {
+          browserslist: ["ie 8"],
+        },
+      ],
+    },
+    {
+      code: "history.back()",
+      options: [
+        {
+          browserslist: ["Safari 11", "Opera 57", "Edge 17"],
+        },
+      ],
+    },
+    {
+      code: "document.querySelector()",
+      options: [
+        {
+          browserslist: ["Safari 11", "Opera 57", "Edge 17"],
+        },
+      ],
+    },
+    {
+      code: "new ServiceWorker()",
+      options: [
+        {
+          browserslist: ["chrome 57", "firefox 50"],
+        },
+      ],
+    },
+    {
+      code: "document.currentScript()",
+      options: [
+        {
+          browserslist: ["chrome 57", "firefox 50", "safari 10", "edge 14"],
+        },
+      ],
+    },
+    {
+      code: "document.querySelector()",
+      options: [
+        {
+          browserslist: ["ChromeAndroid 80"],
+        },
+      ],
+    },
+    {
+      code: "document.hasFocus()",
+      options: [
+        {
+          browserslist: ["Chrome 27"],
+        },
+      ],
+    },
+    {
+      code: "new URL()",
+      options: [
+        {
+          browserslist: ["ChromeAndroid 78", "ios 11"],
+        },
+      ],
+    },
+    {
+      code: "document.currentScript('some')",
+      options: [
+        {
+          browserslist: ["chrome 57", "firefox 50", "safari 10", "edge 14"],
+        },
+      ],
+    },
+    {
+      code: "WebAssembly.compile()",
+      options: [
+        {
+          browserslist: ["chrome 57"],
+        },
+      ],
+    },
+    {
+      code: "new IntersectionObserver(() => {}, {});",
+      options: [
+        {
+          browserslist: ["chrome 58"],
+        },
+      ],
+    },
+    {
+      code: "new URL('http://example')",
+      options: [
+        {
+          browserslist: ["chrome 32", "safari 7.1", "firefox 26"],
+        },
+      ],
+    },
+    {
+      code: "new URLSearchParams()",
+      options: [
+        {
+          browserslist: ["chrome 49", "safari 10.1", "firefox 44"],
+        },
+      ],
+    },
   ],
   invalid: [
     {
@@ -90,7 +386,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "navigator.hardwareConcurrency;\n        navigator.serviceWorker;\n        new SharedWorker();",
       errors: [
         {
-          message: "Navigator.hardwareConcurrency() is not supported in Chrome 4",
+          message:
+            "Navigator.hardwareConcurrency() is not supported in Chrome 4",
         },
         {
           message: "Navigator.serviceWorker() is not supported in Chrome 4",
@@ -565,10 +862,12 @@ ruleTester.run("tscompat", tscompat, {
       code: "Object.entries({}), Object.values({})",
       errors: [
         {
-          message: "Object.entries() is not supported in Android 4, Safari iOS 7",
+          message:
+            "Object.entries() is not supported in Android 4, Safari iOS 7",
         },
         {
-          message: "Object.values() is not supported in Android 4, Safari iOS 7",
+          message:
+            "Object.values() is not supported in Android 4, Safari iOS 7",
         },
       ],
       options: [
