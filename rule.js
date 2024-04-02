@@ -1,4 +1,5 @@
 import { ESLintUtils } from "@typescript-eslint/utils";
+import { getTypeName } from "@typescript-eslint/type-utils";
 import bcd from "@mdn/browser-compat-data" with { type: "json" };
 import browserslist from "browserslist";
 import ts from "typescript";
@@ -82,18 +83,21 @@ function findBrowserTargets(list) {
 function findSupport({ typeName, calleeName }) {
   let support;
 
-  if (typeName === 'window') {
-    support = bcd.api['EventTarget']?.[calleeName]?.__compat?.support || 
-      bcd.api[calleeName]?.__compat?.support || 
+  if (typeName === "window") {
+    support =
+      bcd.api["EventTarget"]?.[calleeName]?.__compat?.support ||
+      bcd.api[calleeName]?.__compat?.support ||
       bcd.javascript.builtins[calleeName]?.__compat?.support;
   }
 
-  support = 
+  support =
     support ||
-    bcd[typeName.toLowerCase()]?.api[`${calleeName}_static`]?.__compat?.support ||
+    bcd[typeName.toLowerCase()]?.api[`${calleeName}_static`]?.__compat
+      ?.support ||
     bcd.api[capitalize(typeName)]?.[calleeName]?.__compat?.support;
 
   if (!support) {
+    console.log({ typeName, calleeName });
     support = bcd.javascript.builtins[typeName][calleeName].__compat.support;
   }
 
@@ -106,8 +110,8 @@ function findSupport({ typeName, calleeName }) {
     if (value.version_added !== Infinity) {
       support[key] = {
         // For _some_ reason the dataset has these unicode characters.
-        version_added: value.version_added.replace('≤', "")
-      }
+        version_added: value.version_added.replace("≤", ""),
+      };
     }
   }
 
@@ -128,8 +132,9 @@ export const tscompat = createRule({
         let typeName;
 
         // Extract type from `NewExpression`.
-        if (node.object.type === 'NewExpression') {
-          typeName = node.object.callee.name || node.object.callee.property.name
+        if (node.object.type === "NewExpression") {
+          typeName =
+            node.object.callee.name || node.object.callee.property.name;
         } else {
           const type = getConstrainedTypeAtLocation(services, node.object);
           const [tsType] = Object.entries(ts.TypeFlags).find(
@@ -142,9 +147,18 @@ export const tscompat = createRule({
             tsType.replace("Literal", "");
         }
 
+        typeName = getTypeName(
+          checker,
+          getConstrainedTypeAtLocation(services, node.object),
+        )
+          .replace("Constructor", "")
+          .replace("<unknown>", "");
+
+        if (typeName === "any") return;
+
         const calleeName = node.property.name;
 
-        typeName = typeName.replace('Constructor', "");
+        typeName = typeName.replace("Constructor", "");
 
         const support =
           typeName === "globalThis"
@@ -153,8 +167,6 @@ export const tscompat = createRule({
 
         const browserTargets = findBrowserTargets(browsers);
         failingSupport = isSupported({ support, browserTargets });
-
-        console.log({typeName, calleeName, browserTargets, failingSupport})
 
         if (failingSupport.length) {
           const humanReadableBrowsers = failingSupport
@@ -170,10 +182,16 @@ export const tscompat = createRule({
       },
       NewExpression(node) {
         const type = getConstrainedTypeAtLocation(services, node);
-        const typeName = type.symbol?.escapedName || node.callee.name;
+        const typeName = getTypeName(
+          checker,
+          services.getTypeAtLocation(node.callee),
+        ).replace("Constructor", "");
 
-        const support = 
-          bcd.api[typeName]?.__compat.support || bcd.javascript.builtins[typeName].__compat.support;
+        return;
+
+        const support =
+          bcd.api[typeName]?.__compat.support ||
+          bcd.javascript.builtins[typeName].__compat.support;
 
         for (let [key, value] of Object.entries(support)) {
           if (Array.isArray(value)) {
@@ -184,8 +202,8 @@ export const tscompat = createRule({
           if (value.version_added !== Infinity) {
             support[key] = {
               // For _some_ reason the dataset has these unicode characters.
-              version_added: value.version_added.replace('≤', "")
-            }
+              version_added: value.version_added.replace("≤", ""),
+            };
           }
         }
 

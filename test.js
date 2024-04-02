@@ -6,6 +6,14 @@ import { tscompat } from "./rule.js";
 ruleTester.run("tscompat", tscompat, {
   valid: [
     {
+      code: "const s = new Set(); s.intersection();",
+      options: [
+        {
+          browserslist: ["chrome 122"],
+        },
+      ],
+    },
+    {
       code: `const a = [1,2,3]; a.at(1);`,
       options: [{ browserslist: ["chrome >= 123"] }],
       skip: true,
@@ -86,6 +94,14 @@ ruleTester.run("tscompat", tscompat, {
       options: [
         {
           browserslist: ["edge 79"],
+        },
+      ],
+    },
+    {
+      code: "import { Set } from 'immutable'; const s = new Set(); s.intersection();",
+      options: [
+        {
+          browserslist: ["chrome 121"],
         },
       ],
     },
@@ -323,6 +339,17 @@ ruleTester.run("tscompat", tscompat, {
     },
   ],
   invalid: [
+    {
+      code: "const s = new Set(); s.intersection();",
+      options: [
+        {
+          browserslist: ["chrome 121"],
+        },
+      ],
+      errors:[
+        {message: 'Set.intersection() is not supported in Chrome 121'}
+      ],
+    },
     {
       code: `const a = [1,2,3]; a.at(1);`,
       options: [{ browserslist: ["chrome >= 70", "firefox >= 80"] }],

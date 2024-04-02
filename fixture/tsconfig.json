@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "lib": ["DOM", "ESNEXT"]
   },
   "include": ["file.ts", "react.tsx"]
 }
