@@ -16,22 +16,18 @@ ruleTester.run("tscompat", tscompat, {
     {
       code: `const a = [1,2,3]; a.at(1);`,
       options: [{ browserslist: ["chrome >= 123"] }],
-      skip: true,
     },
     {
       code: "Promise.allSettled()",
       options: [{ browserslist: browserslist.defaults }],
-      skip: true,
     },
     {
       code: "new ServiceWorker()",
       options: [{ browserslist: browserslist.defaults }],
-      skip: true,
     },
     {
       code: "new IntersectionObserver(() => {}, {});",
       options: [{ browserslist: browserslist.defaults }],
-      skip: true,
     },
     {
       code: "Array.from()",
@@ -318,7 +314,6 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
-      skip: true,
       code: '// it should throw an error here, but it doesn\'t\n        const event = new CustomEvent("cat", {\n          detail: {\n            hazcheeseburger: true\n          }\n        });\n        window.dispatchEvent(event);',
       errors: [
         {
@@ -595,7 +590,71 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
+      code: "const m = new window.Map(); m.size",
+      errors: [
+        {
+          message: "Map.size() is not supported in Chrome 37",
+          type: "MemberExpression",
+        },
+        {
+          message: "window.Map() is not supported in Chrome 37",
+          type: "MemberExpression",
+        },
+      ],
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
+      code: "const m = new window.Map(); m.size()",
+      errors: [
+        {
+          message: "Map.size() is not supported in Chrome 37",
+          type: "MemberExpression",
+        },
+        {
+          message: "window.Map() is not supported in Chrome 37",
+          type: "MemberExpression",
+        },
+      ],
+      options: [
+        {
+          browserslist: ["chrome 37"],
+        },
+      ],
+    },
+    {
       code: "new Array().flat",
+      errors: [
+        {
+          message: "Array.flat() is not supported in Chrome 68",
+          type: "MemberExpression",
+        },
+      ],
+      options: [
+        {
+          browserslist: ["chrome 68"],
+        },
+      ],
+    },
+    {
+      code: "const a = new Array(); a.flat",
+      errors: [
+        {
+          message: "Array.flat() is not supported in Chrome 68",
+          type: "MemberExpression",
+        },
+      ],
+      options: [
+        {
+          browserslist: ["chrome 68"],
+        },
+      ],
+    },
+    {
+      code: "const a = new Array(); a.flat()",
       errors: [
         {
           message: "Array.flat() is not supported in Chrome 68",
@@ -753,6 +812,32 @@ ruleTester.run("tscompat", tscompat, {
       errors: [
         {
           message: "String.at() is not supported in Safari 12, Chrome 39",
+        },
+      ],
+      options: [
+        {
+          browserslist: ["Chrome 39", "safari 12"],
+        },
+      ],
+    },
+    {
+      code: "const a = 'foo'; a.at(5)",
+      errors: [
+        {
+          message: "String.at() is not supported in Safari 12, Chrome 39",
+        },
+      ],
+      options: [
+        {
+          browserslist: ["Chrome 39", "safari 12"],
+        },
+      ],
+    },
+    {
+      code: "const a = []; a.at(5)",
+      errors: [
+        {
+          message: "Array.at() is not supported in Safari 12, Chrome 39",
         },
       ],
       options: [

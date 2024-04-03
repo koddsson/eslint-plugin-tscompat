@@ -182,8 +182,7 @@ function formatBrowserList(failures) {
  */
 function convertToMDNName(checker, type) {
   const typeName = getTypeName(checker, type)
-    .replace("<any, any>", "")
-    .replace("<unknown>", "")
+    .replace(/\<.*\>/gm, "")
     .replace("Constructor", "")
     .replace("typeof ", "");
 
