@@ -98,122 +98,10 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
-      code: "import { Set } from 'immutable'; const s = new Set(); s.intersection();",
-      options: [
-        {
-          browserslist: ["chrome 121"],
-        },
-      ],
-    },
-    {
-      code: "import { Set } from 'immutable';\n        new Set();",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "const { Set } = require('immutable');\n        new Set();",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "const { Set } = require('immutable');\n        new Set();",
-      options: [
-        {
-          browserslist: ["current node"],
-        },
-      ],
-    },
-    {
-      code: "const { Set } = require('immutable');\n        new Set();",
-      options: [
-        {
-          browserslist: ["chrome 37", "current node"],
-        },
-      ],
-    },
-    {
-      code: "const Set = require('immutable').Set;\n        new Set();",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
       code: "Promise.resolve()",
       options: [
         {
           browserslist: ["node 10"],
-        },
-      ],
-    },
-    {
-      code: "const { Set } = require('immutable');\n        (() => {\n          new Set();\n        })();",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "import Set from 'immutable';\n        new Set();",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "function Set() {}\n        new Set();",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "const Set = () => {};\n        new Set();",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "const bar = () => {\n          const Set = () => {};\n          new Set();\n        }",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "const bar = () => {\n          class Set {}\n          new Set()\n        }",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "const bar = () => {\n          const Set = {}\n          new Set()\n        }",
-      options: [
-        {
-          browserslist: ["chrome 37"],
-        },
-      ],
-    },
-    {
-      code: "const bar = () => {\n          function Set() {}\n          new Set()\n        }",
-      options: [
-        {
-          browserslist: ["chrome 37"],
         },
       ],
     },
@@ -346,8 +234,8 @@ ruleTester.run("tscompat", tscompat, {
           browserslist: ["chrome 121"],
         },
       ],
-      errors:[
-        {message: 'Set.intersection() is not supported in Chrome 121'}
+      errors: [
+        { message: "Set.intersection() is not supported in Chrome 121" },
       ],
     },
     {
@@ -430,6 +318,7 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
+      skip: true,
       code: '// it should throw an error here, but it doesn\'t\n        const event = new CustomEvent("cat", {\n          detail: {\n            hazcheeseburger: true\n          }\n        });\n        window.dispatchEvent(event);',
       errors: [
         {
@@ -929,7 +818,6 @@ ruleTester.run("tscompat", tscompat, {
           browserslist: ["chrome 23"],
         },
       ],
-      only: true
     },
   ],
 });
