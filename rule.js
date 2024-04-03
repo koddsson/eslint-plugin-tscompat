@@ -268,7 +268,11 @@ export const tscompat = createRule({
           const humanReadableBrowsers = formatBrowserList(failures);
 
           context.report({
-            message: `${formatTypeName(typeName)}.${calleeName}() is not supported in ${humanReadableBrowsers}`,
+            data: {
+              typeName: `${formatTypeName(typeName)}.${calleeName}()`,
+              browsers: humanReadableBrowsers,
+            },
+            messageId: "incompatable",
             node,
           });
         }
@@ -296,7 +300,11 @@ export const tscompat = createRule({
           const humanReadableBrowsers = formatBrowserList(failures);
 
           context.report({
-            message: `${formatTypeName(typeName)} is not supported in ${humanReadableBrowsers}`,
+            data: {
+              typeName: formatTypeName(typeName),
+              browsers: humanReadableBrowsers,
+            },
+            messageId: "incompatable",
             node,
           });
         }
@@ -304,6 +312,7 @@ export const tscompat = createRule({
       CallExpression(node) {
         console.log("CallExpression!");
 
+        /** @type {string} */
         const typeName = node.callee.name;
 
         if (!typeName) return;
@@ -321,7 +330,11 @@ export const tscompat = createRule({
           const humanReadableBrowsers = formatBrowserList(failures);
 
           context.report({
-            message: `${formatTypeName(typeName)}() is not supported in ${humanReadableBrowsers}`,
+            data: {
+              typeName: `${formatTypeName(typeName)}()`,
+              browsers: humanReadableBrowsers,
+            },
+            messageId: "incompatable",
             node,
           });
         }
@@ -329,11 +342,11 @@ export const tscompat = createRule({
     };
   },
   meta: {
-    docs: {
-      description: "Lint codebase for cross-browser compatability.",
-    },
-    messages: {},
     type: "suggestion",
+    docs: {
+      description: "enforce cross-browser compatability in codebase",
+      url: "notsure",
+    },
     schema: {
       type: "array",
       minItems: 1,
@@ -349,6 +362,9 @@ export const tscompat = createRule({
           additionalProperties: false,
         },
       ],
+    },
+    messages: {
+      incompatable: "{{typeName}} is not supported in {{browsers}}",
     },
   },
   name: "tscompat",

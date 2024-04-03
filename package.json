@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@typescript-eslint/rule-tester": "^7.4.0",
+    "eslint-plugin-eslint-plugin": "^5.5.0",
     "mocha": "^10.4.0"
   }
 }

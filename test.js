@@ -593,11 +593,11 @@ ruleTester.run("tscompat", tscompat, {
       code: "const m = new window.Map(); m.size",
       errors: [
         {
-          message: "Map.size() is not supported in Chrome 37",
+          message: "window.Map() is not supported in Chrome 37",
           type: "MemberExpression",
         },
         {
-          message: "window.Map() is not supported in Chrome 37",
+          message: "Map.size() is not supported in Chrome 37",
           type: "MemberExpression",
         },
       ],
@@ -611,11 +611,11 @@ ruleTester.run("tscompat", tscompat, {
       code: "const m = new window.Map(); m.size()",
       errors: [
         {
-          message: "Map.size() is not supported in Chrome 37",
+          message: "window.Map() is not supported in Chrome 37",
           type: "MemberExpression",
         },
         {
-          message: "window.Map() is not supported in Chrome 37",
+          message: "Map.size() is not supported in Chrome 37",
           type: "MemberExpression",
         },
       ],
