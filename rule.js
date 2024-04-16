@@ -108,8 +108,6 @@ function findSupport({ typeName, calleeName }) {
     calleeName = undefined;
   }
 
-  console.log("findSupport", { typeName, calleeName });
-
   let support =
     // TODO
     bcd.javascript.builtins[typeName]?.[calleeName]?.__compat?.support ||
@@ -125,11 +123,8 @@ function findSupport({ typeName, calleeName }) {
     bcd.api[typeName]?.__compat?.support;
 
   if (typeName === "WebAssembly") {
-    console.log(bcd.webassembly.api[`${calleeName}_static`]);
     support = bcd.webassembly.api[`${calleeName}_static`]?.__compat?.support;
   }
-
-  console.log({ support });
 
   if (!support) return {};
 
@@ -208,7 +203,17 @@ function getType(checker, services, node) {
   let type = getConstrainedTypeAtLocation(services, node);
   // If this is a union type we gotta handle that specfically
   // TODO: Handle this better actually
+
   if ("types" in type) {
+    const found = type.types
+      .map((type) => {
+        return { typeName: getTypeName(checker, type), type };
+      })
+      .find(({ typeName }) => typeName === "Window");
+
+    if (!found) {
+      return checker.getAnyType();
+    }
     // @ts-expect-error todo
     type = type.types
       .map((type) => {
@@ -247,7 +252,6 @@ export const tscompat = createRule({
 
     return {
       MemberExpression(node) {
-        console.log("MemberExpression!");
         const type = getType(checker, services, node.object);
         const typeName = convertToMDNName(checker, type);
 
@@ -255,14 +259,10 @@ export const tscompat = createRule({
         // name. We should test for this. TODO
         const calleeName = node.property.name;
 
-        console.log({ typeName, calleeName });
-
         /** @type {Record<string, {version_added: string}>} */
         const support = findSupport({ typeName, calleeName });
         const browserTargets = findBrowserTargets(browsers);
         const failures = getFailures({ support, browserTargets });
-
-        console.log({ support, browserTargets, failures });
 
         if (failures.length) {
           const humanReadableBrowsers = formatBrowserList(failures);
@@ -278,8 +278,6 @@ export const tscompat = createRule({
         }
       },
       NewExpression(node) {
-        console.log("NewExpression!");
-
         // If we are doing `window.Map()`, then let `MemberExpression` handle this.
         if (node.callee.type === "MemberExpression") return;
 
@@ -287,14 +285,10 @@ export const tscompat = createRule({
         let typeName = convertToMDNName(checker, type);
         typeName = typeName === "any" ? node.callee.name : typeName;
 
-        console.log({ typeName });
-
         /** @type {Record<string, {version_added: string}>} */
         const support = findSupport({ typeName });
         const browserTargets = findBrowserTargets(browsers);
         const failures = getFailures({ support, browserTargets });
-
-        console.log({ support, browserTargets, failures });
 
         if (failures.length) {
           const humanReadableBrowsers = formatBrowserList(failures);
@@ -310,21 +304,15 @@ export const tscompat = createRule({
         }
       },
       CallExpression(node) {
-        console.log("CallExpression!");
-
         /** @type {string} */
         const typeName = node.callee.name;
 
         if (!typeName) return;
 
-        console.log({ typeName });
-
         /** @type {Record<string, {version_added: string}>} */
         const support = findSupport({ typeName });
         const browserTargets = findBrowserTargets(browsers);
         const failures = getFailures({ support, browserTargets });
-
-        console.log({ support, browserTargets, failures });
 
         if (failures.length) {
           const humanReadableBrowsers = formatBrowserList(failures);
@@ -342,7 +330,7 @@ export const tscompat = createRule({
     };
   },
   meta: {
-    type: "suggestion",
+    type: "problem",
     docs: {
       description: "enforce cross-browser compatability in codebase",
       url: "notsure",

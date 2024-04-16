@@ -1,5 +1,5 @@
 {
-  "name": "lint-types-test",
+  "name": "@koddsson/eslint-plugin-tscompat",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
