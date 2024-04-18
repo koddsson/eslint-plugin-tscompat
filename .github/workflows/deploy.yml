@@ -30,7 +30,7 @@ jobs:
           cp jsr.json jsr.json.old
           jq '.version = "${TAG_NAME}"' jsr.json.old > jsr.json
           rm jsr.json.old
-      - run: npx jsr publish
+      - run: npx jsr publish --allow-dirty
       - run: npm version ${TAG_NAME} --git-tag-version=false
         env:
           TAG_NAME: ${{ github.event.release.tag_name }}
