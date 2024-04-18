@@ -5,5 +5,5 @@
     "lib": ["DOM", "ESNEXT"],
     "checkJs": true
   },
-  "include": ["*.js", "*.ts"]
+  "include": ["tests", "lib", "*.js", "*.ts"]
 }

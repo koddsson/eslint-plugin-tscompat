@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "lint": "eslint .",
-    "test": "mocha --require fixture.js --reporter dot"
+    "test": "mocha --require tests/fixture.js --reporter dot tests/"
   },
   "keywords": [],
   "author": "",
