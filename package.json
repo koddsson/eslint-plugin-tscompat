@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@eslint/js": "^8.57.0",
+    "@eslint/js": "^9.0.0",
     "@mdn/browser-compat-data": "^5.5.18",
     "@typescript-eslint/type-utils": "^7.5.0",
     "@typescript-eslint/utils": "^7.7.0",
