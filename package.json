@@ -19,7 +19,7 @@
     "ast-metadata-inferer": "^0.8.0",
     "browserslist": "^4.23.0",
     "eslint": "^8.57.0",
-    "eslint-plugin-jsdoc": "^48.2.2",
+    "eslint-plugin-jsdoc": "^48.2.3",
     "semver": "^7.6.0",
     "typescript": "^5.4.3",
     "typescript-eslint": "^7.4.0"
