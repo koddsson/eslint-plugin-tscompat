@@ -26,6 +26,7 @@ export default tseslint.config(
       "jsdoc/require-returns-description": "off",
       "jsdoc/require-param-description": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
     },
   },
   {
