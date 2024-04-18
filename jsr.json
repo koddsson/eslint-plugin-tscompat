@@ -1,6 +1,6 @@
 {
   "name": "@koddsson/eslint-config-tscompat",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "exports": "./index.js",
   "publish": {
     "include": [

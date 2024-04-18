@@ -1,6 +1,6 @@
 {
   "name": "@koddsson/eslint-plugin-tscompat",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "",
   "main": "index.js",
   "type": "module",

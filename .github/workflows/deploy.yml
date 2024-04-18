@@ -28,7 +28,7 @@ jobs:
       - run: npm run build --if-present
       - run: |
           cp jsr.json jsr.json.old
-          jq '.version = "${TAG_NAME}"' > jsr.json
+          jq '.version = "${TAG_NAME}"' jsr.json.old > jsr.json
           rm jsr.json.old
       - run: npx jsr publish
       - run: npm version ${TAG_NAME} --git-tag-version=false
