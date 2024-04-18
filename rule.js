@@ -15,7 +15,7 @@ const createRule = ESLintUtils.RuleCreator(
 /**
  * @param {import('@typescript-eslint/utils').ParserServicesWithTypeInformation} services
  * @param {import('@typescript-eslint/typescript-estree').TSESTree.Node} node
-
+ *
  * @returns {import('typescript').Type | import('typescript').UnionOrIntersectionType}
  */
 function getConstrainedTypeAtLocation(services, node) {
@@ -28,7 +28,7 @@ function getConstrainedTypeAtLocation(services, node) {
 }
 
 /**
- * @param {{support: Partial<Record<MDNBrowserName, {version_added: string}>>, browserTargets: Partial<Record<MDNBrowserName, number>>}} default
+ * @param {{support: Record<MDNBrowserName, import('@mdn/browser-compat-data').SimpleSupportStatement> ,browserTargets: Partial<Record<MDNBrowserName, number>>}} default
  *
  * @returns {Array<{name: MDNBrowserName, version: number, supportedSince: number}>}
  */
@@ -36,12 +36,13 @@ function getFailures({ support, browserTargets }) {
   /** @type {Array<{name: MDNBrowserName, version: number, supportedSince: number}>} */
   const supportFailures = [];
   for (const [name, version] of Object.entries(browserTargets)) {
-    // @ts-expect-error
+    // @ts-expect-error TODO
     let browserSupport = support[name];
     if (!browserSupport) continue;
+    // eslint-disable-next-line
     const supportedSince = Number.parseFloat(browserSupport?.version_added);
     if (version < supportedSince) {
-      // @ts-expect-error
+      // @ts-expect-error TODO
       supportFailures.push({ name, version, supportedSince });
     }
   }
@@ -68,9 +69,13 @@ function browserslistToMdnNames(browserslistData) {
     samsung: "samsunginternet_android",
   };
   for (const [name, value] of Object.entries(browserslistData)) {
+    // @ts-expect-error TODO
     const newName = nameMap[name];
     if (newName === name) continue;
+    // @ts-expect-error TODO
+    // eslint-disable-next-line
     browserslistData[newName] = value;
+    // @ts-expect-error TODO
     delete browserslistData[name];
   }
   return browserslistData;
@@ -107,19 +112,24 @@ function findSupport({ typeName, calleeName }) {
     calleeName = undefined;
   }
 
+  /** @type {Partial<Record<MDNBrowserName, import('@mdn/browser-compat-data').SupportStatement>> | undefined} */
   let support =
     // TODO
-    bcd.javascript.builtins[typeName]?.[calleeName]?.__compat?.support ||
+    (typeName &&
+      calleeName &&
+      bcd.javascript.builtins[typeName]?.[calleeName]?.__compat?.support) ||
     // when `window.Map()`
     (calleeName && bcd.javascript.builtins[calleeName]?.__compat?.support) ||
     // when Map().size
-    bcd.javascript.builtins[typeName]?.__compat?.support ||
+    (typeName && bcd.javascript.builtins[typeName]?.__compat?.support) ||
     // When `window.fetch()`
-    bcd.api[calleeName]?.__compat?.support ||
+    (calleeName && bcd.api[calleeName]?.__compat?.support) ||
     // when Window
-    bcd.api[typeName]?.[calleeName]?.__compat?.support ||
+    (typeName &&
+      calleeName &&
+      bcd.api[typeName]?.[calleeName]?.__compat?.support) ||
     // When `new ResizeObserver()`
-    bcd.api[typeName]?.__compat?.support;
+    (typeName && bcd.api[typeName]?.__compat?.support);
 
   if (typeName === "WebAssembly") {
     support = bcd.webassembly.api[`${calleeName}_static`]?.__compat?.support;
@@ -129,13 +139,19 @@ function findSupport({ typeName, calleeName }) {
 
   for (let [key, value] of Object.entries(support || {})) {
     if (Array.isArray(value)) {
+      // @ts-expect-error TODO
       value = value.find((x) => !x.prefix);
     }
+    // @ts-expect-error TODO
     value.version_added = value.version_added || Infinity;
 
+    // @ts-expect-error TODO
     if (value.version_added !== Infinity) {
+      // @ts-expect-error TODO
       support[key] = {
         // For _some_ reason the dataset has these unicode characters.
+        // @ts-expect-error TODO
+        // eslint-disable-next-line
         version_added: value.version_added.replace("≤", ""),
       };
     }
@@ -146,6 +162,8 @@ function findSupport({ typeName, calleeName }) {
 
 /**
  * @param {Array<{name: MDNBrowserName, version: number}>} failures
+ *
+ * @returns {unknown}
  */
 function formatBrowserList(failures) {
   /** @type {Partial<Record<MDNBrowserName, string>>} */
@@ -176,7 +194,7 @@ function formatBrowserList(failures) {
  */
 function convertToMDNName(checker, type) {
   const typeName = getTypeName(checker, type)
-    .replace(/\<.*\>/gm, "")
+    .replace(/<.*>/gm, "")
     .replace("Constructor", "")
     .replace("typeof ", "");
 
@@ -246,7 +264,11 @@ export const tscompat = createRule({
     const services = ESLintUtils.getParserServices(context);
     const checker = services.program.getTypeChecker();
 
+    // @ts-expect-error TODO
     const options = context.options[0];
+
+    // @ts-expect-error TODO
+    // eslint-disable-next-line
     const browsers = browserslist(options?.browserslist);
 
     return {
@@ -254,11 +276,12 @@ export const tscompat = createRule({
         const type = getType(checker, services, node.object);
         const typeName = convertToMDNName(checker, type);
 
+        if (!typeName) return;
+
         // @ts-expect-error It's possible for the property of the member expression to not have a
         // name. We should test for this. TODO
         const calleeName = node.property.name;
 
-        /** @type {Record<string, {version_added: string}>} */
         const support = findSupport({ typeName, calleeName });
         const browserTargets = findBrowserTargets(browsers);
         const failures = getFailures({ support, browserTargets });
@@ -278,14 +301,17 @@ export const tscompat = createRule({
       },
       NewExpression(node) {
         // If we are doing `window.Map()`, then let `MemberExpression` handle this.
+        // eslint-disable-next-line
         if (node.callee.type === "MemberExpression") return;
 
         const type = getType(checker, services, node);
         let typeName = convertToMDNName(checker, type);
+        // @ts-expect-error TODO
         typeName = typeName === "any" ? node.callee.name : typeName;
 
-        /** @type {Record<string, {version_added: string}>} */
-        const support = findSupport({ typeName });
+        if (!typeName) return;
+
+        const support = findSupport({ typeName, calleeName: undefined });
         const browserTargets = findBrowserTargets(browsers);
         const failures = getFailures({ support, browserTargets });
 
@@ -308,8 +334,7 @@ export const tscompat = createRule({
 
         if (!typeName) return;
 
-        /** @type {Record<string, {version_added: string}>} */
-        const support = findSupport({ typeName });
+        const support = findSupport({ typeName, calleeName: undefined });
         const browserTargets = findBrowserTargets(browsers);
         const failures = getFailures({ support, browserTargets });
 
@@ -332,7 +357,7 @@ export const tscompat = createRule({
     type: "problem",
     docs: {
       description: "enforce cross-browser compatability in codebase",
-      url: "notsure",
+      url: "https://github.com/koddsson/eslint-config-tscompat",
     },
     schema: {
       type: "array",

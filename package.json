@@ -1,6 +1,6 @@
 {
   "name": "@koddsson/eslint-plugin-tscompat",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -24,6 +24,7 @@
     "typescript-eslint": "^7.4.0"
   },
   "devDependencies": {
+    "@types/eslint": "^8.56.9",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.12.7",
     "@typescript-eslint/rule-tester": "^7.4.0",

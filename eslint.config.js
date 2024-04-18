@@ -21,6 +21,14 @@ export default tseslint.config(
     ...jsdoc.configs["flat/recommended"],
   },
   {
+    rules: {
+      "jsdoc/tag-lines": "off",
+      "jsdoc/require-returns-description": "off",
+      "jsdoc/require-param-description": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+    },
+  },
+  {
     ignores: ["eslint.config.js"],
   },
 );
