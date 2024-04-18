@@ -26,5 +26,5 @@ export const invalid = tests.invalid.map(({ code, settings, errors }) => {
   };
 });
 
-// eslint-disable-next-line no-console
+// eslint-disable-next-line no-console, no-undef
 console.log(JSON.stringify(valid, null, 2));
