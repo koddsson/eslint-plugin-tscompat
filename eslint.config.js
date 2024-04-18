@@ -29,6 +29,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["eslint.config.js"],
+    ignores: ["eslint.config.js", ".github/"],
   },
 );
