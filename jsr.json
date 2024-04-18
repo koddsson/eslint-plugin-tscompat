@@ -3,6 +3,13 @@
   "version": "0.0.1",
   "exports": "./index.js",
   "publish": {
-    "include": ["LICENSE", "README.md", "rule.js", "index.js", "types.ts"]
+    "include": [
+      "LICENSE",
+      "README.md",
+      "rule.js",
+      "index.js",
+      "types.ts",
+      "jsr.json"
+    ]
   }
 }
