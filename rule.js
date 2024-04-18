@@ -12,9 +12,6 @@ const createRule = ESLintUtils.RuleCreator(
   (name) => `https://example.com/rule/${name}`,
 );
 
-/** @param {string} str */
-const capitalize = (str) => `${str[0].toUpperCase()}${str.slice(1)}`;
-
 /**
  * @param {import('@typescript-eslint/utils').ParserServicesWithTypeInformation} services
  * @param {import('@typescript-eslint/typescript-estree').TSESTree.Node} node
@@ -53,6 +50,8 @@ function getFailures({ support, browserTargets }) {
 
 /**
  * @param {Partial<Record<BrowsersListBrowserName, number>>} browserslistData
+ *
+ * @returns {unknown}
  */
 function browserslistToMdnNames(browserslistData) {
   /** @type {Partial<Record<BrowsersListBrowserName, MDNBrowserName>>} */
