@@ -1,5 +1,8 @@
 {
   "name": "@koddsson/eslint-config-tscompat",
   "version": "0.0.1",
-  "exports": "./index.js"
+  "exports": "./index.js",
+  "publish": {
+    "include": ["LICENSE", "README.md", "rule.js", "index.js", "types.ts"]
+  }
 }
