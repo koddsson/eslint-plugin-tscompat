@@ -32,7 +32,7 @@ jobs:
           rm jsr.json.old
         env:
           TAG_NAME: ${{ github.event.release.tag_name }}
-      - run: npx jsr publish --allow-dirty
+      - run: npx jsr publish --allow-dirty --allow-slow-types
       - run: npm version ${TAG_NAME} --git-tag-version=false
         env:
           TAG_NAME: ${{ github.event.release.tag_name }}
