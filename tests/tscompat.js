@@ -1,7 +1,7 @@
 import browserslist from "browserslist";
 
 import { ruleTester } from "./test-helper.js";
-import { tscompat } from "../lib/rules/tsompat.js";
+import { tscompat } from "../lib/rules/tscompat.js";
 
 ruleTester.run("tscompat", tscompat, {
   valid: [
