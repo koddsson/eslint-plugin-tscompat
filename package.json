@@ -12,7 +12,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@eslint/js": "^9.0.0",
     "@mdn/browser-compat-data": "^5.5.22",
     "@typescript-eslint/type-utils": "^7.7.0",
     "@typescript-eslint/utils": "^7.7.0",
@@ -24,6 +23,7 @@
     "typescript-eslint": "^7.4.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/eslint": "^8.56.9",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.12.7",
