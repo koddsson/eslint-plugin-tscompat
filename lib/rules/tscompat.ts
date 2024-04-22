@@ -5,20 +5,25 @@ import browserslist from "browserslist";
 
 // TODO: Normalize this all into a single browser name so we don't have to be converting all the
 // dang time.
-/** @typedef {import('../../types.js').BrowsersListBrowserName} BrowsersListBrowserName */
-/** @typedef {import('@mdn/browser-compat-data').BrowserName} MDNBrowserName */
+import type {
+  BrowserName as MDNBrowserName,
+  SimpleSupportStatement,
+} from "@mdn/browser-compat-data";
+import type { BrowsersListBrowserName } from "../../types.js";
+
+import type { ParserServicesWithTypeInformation } from "@typescript-eslint/utils";
+import type { TSESTree } from "@typescript-eslint/typescript-estree";
+import type { Type, UnionOrIntersectionType, TypeChecker } from "typescript";
+import type { SimpleSupportStatement } from "@mdn/browser-compat-data";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://example.com/rule/${name}`,
 );
 
-/**
- * @param {import('@typescript-eslint/utils').ParserServicesWithTypeInformation} services
- * @param {import('@typescript-eslint/typescript-estree').TSESTree.Node} node
- *
- * @returns {import('typescript').Type | import('typescript').UnionOrIntersectionType}
- */
-function getConstrainedTypeAtLocation(services, node) {
+function getConstrainedTypeAtLocation(
+  services: ParserServicesWithTypeInformation,
+  node: TSESTree.Node,
+): Type | UnionOrIntersectionType {
   const nodeType = services.getTypeAtLocation(node);
   const constrained = services.program
     .getTypeChecker()
@@ -27,36 +32,34 @@ function getConstrainedTypeAtLocation(services, node) {
   return constrained ?? nodeType;
 }
 
-/**
- * @param {{support: Record<MDNBrowserName, import('@mdn/browser-compat-data').SimpleSupportStatement> ,browserTargets: Partial<Record<MDNBrowserName, number>>}} default
- *
- * @returns {Array<{name: MDNBrowserName, version: number, supportedSince: number}>}
- */
-function getFailures({ support, browserTargets }) {
-  /** @type {Array<{name: MDNBrowserName, version: number, supportedSince: number}>} */
-  const supportFailures = [];
+function getFailures({
+  support,
+  browserTargets,
+}: {
+  support: Record<MDNBrowserName, SimpleSupportStatement>;
+  browserTargets: Partial<Record<MDNBrowserName, number>>;
+}): Array<{ name: MDNBrowserName; version: number; supportedSince: number }> {
+  const supportFailures: Array<{
+    name: MDNBrowserName;
+    version: number;
+    supportedSince: number;
+  }> = [];
   for (const [name, version] of Object.entries(browserTargets)) {
-    // @ts-expect-error TODO
-    let browserSupport = support[name];
+    const browserSupport = support[name];
     if (!browserSupport) continue;
     // eslint-disable-next-line
     const supportedSince = Number.parseFloat(browserSupport?.version_added);
     if (version < supportedSince) {
-      // @ts-expect-error TODO
       supportFailures.push({ name, version, supportedSince });
     }
   }
   return supportFailures;
 }
 
-/**
- * @param {Partial<Record<BrowsersListBrowserName, number>>} browserslistData
- *
- * @returns {unknown}
- */
-function browserslistToMdnNames(browserslistData) {
-  /** @type {Partial<Record<BrowsersListBrowserName, MDNBrowserName>>} */
-  const nameMap = {
+function browserslistToMdnNames(
+  browserslistData: Partial<Record<BrowsersListBrowserName, number>>,
+): Partial<Record<MDNBrowserName, number>> {
+  const nameMap: Partial<Record<BrowsersListBrowserName, MDNBrowserName>> = {
     chrome: "chrome",
     and_chr: "chrome_android",
     edge: "edge",
@@ -81,17 +84,15 @@ function browserslistToMdnNames(browserslistData) {
   return browserslistData;
 }
 
-/**
- * @param {string[]} list
- *
- * @returns {Partial<Record<MDNBrowserName, number>>}
- */
-function findBrowserTargets(list) {
-  /** @type {Partial<Record<BrowsersListBrowserName, number>>} */
-  const browsers = {};
+function findBrowserTargets(
+  list: string[],
+): Partial<Record<MDNBrowserName, number>> {
+  const browsers: Partial<Record<BrowsersListBrowserName, number>> = {};
   for (const item of list) {
-    /** @type {[BrowsersListBrowserName, string]} */
-    let [name, version] = item.split(" ");
+    const [name, version] = item.split(" ") as [
+      BrowsersListBrowserName,
+      string,
+    ];
     const parsedVersion = Number.parseFloat(version);
     if (browsers[name] == null || browsers[name] > parsedVersion) {
       browsers[name] = parsedVersion;
@@ -100,12 +101,15 @@ function findBrowserTargets(list) {
   return browserslistToMdnNames(browsers);
 }
 
-/**
- * @param {{typeName: string | undefined, calleeName: string | undefined}} default
- *
- * @returns {Partial<Record<MDNBrowserName, import('@mdn/browser-compat-data').SupportStatement>>}
- */
-function findSupport({ typeName, calleeName }) {
+function findSupport({
+  typeName,
+  calleeName,
+}: {
+  typeName: string | undefined;
+  calleeName: string | undefined;
+}): Partial<
+  Record<MDNBrowserName, import("@mdn/browser-compat-data").SupportStatement>
+> {
   // TODO: I hate this
   if (typeName === "typeof globalThis") {
     typeName = calleeName;
@@ -137,6 +141,7 @@ function findSupport({ typeName, calleeName }) {
 
   if (!support) return {};
 
+  // eslint-disable-next-line prefer-const
   for (let [key, value] of Object.entries(support || {})) {
     if (Array.isArray(value)) {
       // @ts-expect-error TODO
@@ -160,14 +165,10 @@ function findSupport({ typeName, calleeName }) {
   return support;
 }
 
-/**
- * @param {Array<{name: MDNBrowserName, version: number}>} failures
- *
- * @returns {unknown}
- */
-function formatBrowserList(failures) {
-  /** @type {Partial<Record<MDNBrowserName, string>>} */
-  const mdnNamesToHuman = {
+function formatBrowserList(
+  failures: Array<{ name: MDNBrowserName; version: number }>,
+): unknown {
+  const mdnNamesToHuman: Partial<Record<MDNBrowserName, string>> = {
     chrome: "Chrome",
     chrome_android: "Chrome Android",
     edge: "Edge",
@@ -186,13 +187,10 @@ function formatBrowserList(failures) {
     .join(", ");
 }
 
-/**
- * @param {import('typescript').TypeChecker} checker
- * @param {import('typescript').Type} type
- *
- * @returns {string | undefined}
- */
-function convertToMDNName(checker, type) {
+function convertToMDNName(
+  checker: TypeChecker,
+  type: Type,
+): string | undefined {
   const typeName = getTypeName(checker, type)
     .replace(/<.*>/gm, "")
     .replace("Constructor", "")
@@ -209,14 +207,11 @@ function convertToMDNName(checker, type) {
   return typeName;
 }
 
-/**
- * @param {import('typescript').TypeChecker} checker
- * @param {import('@typescript-eslint/utils').ParserServicesWithTypeInformation} services
- * @param {import('@typescript-eslint/typescript-estree').TSESTree.Node} node
- *
- * @returns {import('typescript').Type}
- */
-function getType(checker, services, node) {
+function getType(
+  checker: TypeChecker,
+  services: ParserServicesWithTypeInformation,
+  node: TSESTree.Node,
+): Type {
   let type = getConstrainedTypeAtLocation(services, node);
   // If this is a union type we gotta handle that specfically
   // TODO: Handle this better actually
@@ -241,13 +236,8 @@ function getType(checker, services, node) {
   return type;
 }
 
-/**
- * @param {string} typeName
- * @returns {string}
- */
-function formatTypeName(typeName) {
-  /** @type {Record<string, string>} */
-  const specialTypes = {
+function formatTypeName(typeName: string): string {
+  const specialTypes: Record<string, string> = {
     Window: "window",
     "typeof globalThis": "globalThis",
   };
@@ -329,8 +319,7 @@ export const tscompat = createRule({
         }
       },
       CallExpression(node) {
-        /** @type {string} */
-        const typeName = node.callee.name;
+        const typeName: string = node.callee.name;
 
         if (!typeName) return;
 
