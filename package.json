@@ -11,6 +11,7 @@
   "exports": {
     ".": "./dist/index.js"
   },
+  "files": ["docs/", "dist/"],
   "keywords": [],
   "author": "",
   "license": "ISC",
