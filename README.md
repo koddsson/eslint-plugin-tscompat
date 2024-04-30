@@ -1,4 +1,4 @@
-# `eslint-plugin-tscompat`
+# `@koddsson/eslint-plugin-tscompat`
 
 > A type-aware browser compatability ESLint rule
 
@@ -7,7 +7,7 @@
 Assuming you already have ESLint installed, run:
 
 ```sh
-npm install eslint-plugin-tscompat --save-dev
+npm install @koddsson/eslint-plugin-tscompat --save-dev
 ```
 
 ## Usage
