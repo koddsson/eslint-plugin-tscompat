@@ -347,6 +347,7 @@ export const tscompat = createRule({
     docs: {
       description: "enforce cross-browser compatability in codebase",
       url: "https://github.com/koddsson/eslint-config-tscompat",
+      recommended: true,
     },
     schema: {
       type: "array",
