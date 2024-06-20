@@ -26,7 +26,7 @@ ruleTester.run("tscompat", tscompat, {
       options: [{ browserslist: browserslist.defaults }],
     },
     {
-      code: "new IntersectionObserver(() => {}, {});",
+      code: "new IntersectionObserver(() => {}, {})",
       options: [{ browserslist: browserslist.defaults }],
     },
     {
@@ -261,7 +261,7 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
-      code: "new ServiceWorker()",
+      code: "new ServiceWorker();",
       options: [{ browserslist: ["chrome 31"] }],
       errors: [
         {
@@ -271,7 +271,7 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
-      code: "new IntersectionObserver(() => {}, {});",
+      code: "new IntersectionObserver(() => {}, {})",
       options: [{ browserslist: ["chrome 49"] }],
       errors: [
         {
