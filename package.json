@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "@types/eslint": "^8.56.9",
+    "@types/eslint": "^9.6.0",
     "@types/node": "^20.12.7",
     "@typescript-eslint/parser": "^7.7.0",
     "@typescript-eslint/rule-tester": "^7.7.0",
