@@ -264,7 +264,7 @@ export const tscompat = createRule({
 
     return {
       MemberExpression(node) {
-        const checkType = (type) => {
+        const checkType = (type: Type) => {
           const typeName = convertToMDNName(checker, type);
 
           if (!typeName || typeName === "{}") return;
