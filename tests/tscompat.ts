@@ -905,6 +905,7 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
+      // s.values() is a IterableIterator which extends Iterator and map() is from Iterator.
       code: "const s = [0, 1, 2]; s.values().map((x) => x);",
       options: [
         {
