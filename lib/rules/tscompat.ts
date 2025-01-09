@@ -2,7 +2,9 @@ import { ESLintUtils } from "@typescript-eslint/utils";
 import { getTypeName } from "@typescript-eslint/type-utils";
 import bcd from "@mdn/browser-compat-data" with { type: "json" };
 import browserslist from "browserslist";
-// import { SymbolFlags } from "typescript";
+
+import typescript from "typescript";
+const { SymbolFlags } = typescript; // Import CJS module in ESM
 
 // TODO: Normalize this all into a single browser name so we don't have to be converting all the
 // dang time.
@@ -296,7 +298,7 @@ export const tscompat = createRule({
           }
 
           const symbol = type.getSymbol()
-          if (symbol && symbol.getFlags() & (32 | 64 /* SymbolFlags.Class | SymbolFlags.Interface */)) {
+          if (symbol && symbol.getFlags() & (SymbolFlags.Class | SymbolFlags.Interface)) {
             const baseTypes =  checker.getBaseTypes(type);
             if (baseTypes) {
               baseTypes.forEach((baseType) => checkType(baseType))
