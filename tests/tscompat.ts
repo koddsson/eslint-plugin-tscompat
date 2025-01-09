@@ -904,5 +904,14 @@ ruleTester.run("tscompat", tscompat, {
         },
       ],
     },
+    {
+      code: "const s = [0, 1, 2]; s.values().map((x) => x);",
+      options: [
+        {
+          browserslist: ["chrome 121"],
+        },
+      ],
+      errors: [{ message: "Iterator.map() is not supported in Chrome 121" }],
+    },
   ],
 });
