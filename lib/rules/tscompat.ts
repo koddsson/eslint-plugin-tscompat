@@ -299,7 +299,7 @@ export const tscompat = createRule({
 
           const symbol = type.getSymbol()
           if (symbol && symbol.getFlags() & (SymbolFlags.Class | SymbolFlags.Interface)) {
-            const baseTypes =  checker.getBaseTypes(type);
+            const baseTypes = checker.getBaseTypes(type);
             if (baseTypes) {
               baseTypes.forEach((baseType) => checkType(baseType))
             }
