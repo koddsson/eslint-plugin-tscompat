@@ -3,6 +3,9 @@ import { getTypeName } from "@typescript-eslint/type-utils";
 import bcd from "@mdn/browser-compat-data" with { type: "json" };
 import browserslist from "browserslist";
 
+import typescript from "typescript";
+const { SymbolFlags } = typescript; // Import CJS module in ESM
+
 // TODO: Normalize this all into a single browser name so we don't have to be converting all the
 // dang time.
 import type {
@@ -263,31 +266,47 @@ export const tscompat = createRule({
 
     return {
       MemberExpression(node) {
+        const checkType = (type: Type) => {
+          const typeName = convertToMDNName(checker, type);
+
+          if (!typeName || typeName === "{}") return;
+
+          // @ts-expect-error It's possible for the property of the member expression to not have a
+          // name. We should test for this. TODO
+          const calleeName = node.property.name;
+
+          const support = findSupport({ typeName, calleeName });
+          const browserTargets = findBrowserTargets(browsers);
+          const failures = getFailures({ support, browserTargets });
+
+          if (failures.length) {
+            const humanReadableBrowsers = formatBrowserList(failures);
+
+            context.report({
+              data: {
+                typeName: `${formatTypeName(typeName)}.${calleeName}()`,
+                browsers: humanReadableBrowsers,
+              },
+              messageId: "incompatable",
+              node,
+            });
+          }
+
+          if (Object.keys(support).length > 0) {
+            // Only check most recently overridden definition
+            return
+          }
+
+          const symbol = type.getSymbol()
+          if (symbol && symbol.getFlags() & (SymbolFlags.Class | SymbolFlags.Interface)) {
+            const baseTypes = checker.getBaseTypes(type);
+            if (baseTypes) {
+              baseTypes.forEach((baseType) => checkType(baseType))
+            }
+          }
+        };
         const type = getType(checker, services, node.object);
-        const typeName = convertToMDNName(checker, type);
-
-        if (!typeName) return;
-
-        // @ts-expect-error It's possible for the property of the member expression to not have a
-        // name. We should test for this. TODO
-        const calleeName = node.property.name;
-
-        const support = findSupport({ typeName, calleeName });
-        const browserTargets = findBrowserTargets(browsers);
-        const failures = getFailures({ support, browserTargets });
-
-        if (failures.length) {
-          const humanReadableBrowsers = formatBrowserList(failures);
-
-          context.report({
-            data: {
-              typeName: `${formatTypeName(typeName)}.${calleeName}()`,
-              browsers: humanReadableBrowsers,
-            },
-            messageId: "incompatable",
-            node,
-          });
-        }
+        checkType(type);
       },
       NewExpression(node) {
         // If we are doing `window.Map()`, then let `MemberExpression` handle this.
