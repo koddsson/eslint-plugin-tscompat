@@ -370,7 +370,6 @@ export const tscompat = createRule({
     },
     schema: {
       type: "array",
-      minItems: 1,
       items: [
         {
           type: "object",
@@ -379,7 +378,6 @@ export const tscompat = createRule({
               type: "array",
             },
           },
-          required: ["browserslist"],
           additionalProperties: false,
         },
       ],
