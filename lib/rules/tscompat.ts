@@ -142,6 +142,12 @@ function findSupport({
     support = bcd.webassembly.api[`${calleeName}_static`]?.__compat?.support;
   }
 
+  // First check built-in types (e.g., Set, Array)
+  if (["Set", "Array", "Map"].includes(typeName) && calleeName) {
+    support =
+      bcd.javascript.builtins[typeName]?.[calleeName]?.__compat?.support;
+  }
+
   if (!support) return {};
 
   // eslint-disable-next-line prefer-const
@@ -190,23 +196,35 @@ function formatBrowserList(
     .join(", ");
 }
 
-function convertToMDNName(
-  checker: TypeChecker,
-  type: Type,
-): string | undefined {
+const replaceNameRegex = /<.*>/gmu;
+function convertToMDNName(checker: TypeChecker, type: Type): string {
   const typeName = getTypeName(checker, type)
-    .replace(/<.*>/gm, "")
+    .replace(replaceNameRegex, "")
     .replace("Constructor", "")
     .replace("typeof ", "");
 
-  if (typeName === "string") {
-    return "String";
+  // Safely check for base types
+  const symbol = type.getSymbol();
+  if (symbol) {
+    // Only check classes/interfaces
+    if (symbol.getFlags() & (SymbolFlags.Class | SymbolFlags.Interface)) {
+      // @ts-expect-error TS(2345): we check if its an interface above
+      const baseTypes = checker.getBaseTypes(type);
+      if (baseTypes) {
+        for (const baseType of baseTypes) {
+          const baseTypeName = convertToMDNName(checker, baseType);
+          if (
+            ["Set", "Array", "Map", "WeakMap", "WeakSet"].includes(baseTypeName)
+          ) {
+            return baseTypeName;
+          }
+        }
+      }
+    }
   }
 
-  if (typeName.endsWith("[]")) {
-    return "Array";
-  }
-
+  if (typeName === "string") return "String";
+  if (typeName.endsWith("[]")) return "Array";
   return typeName;
 }
 
@@ -217,7 +235,17 @@ function getType(
 ): Type {
   let type = getConstrainedTypeAtLocation(services, node);
   // If this is a union type we gotta handle that specfically
+
+  // If this is a union type we gotta handle that specifically
   // TODO: Handle this better actually
+  if (type.isUnionOrIntersection()) {
+    for (const subtype of type.types) {
+      const subtypeName = convertToMDNName(checker, subtype);
+      if (["Set", "Array", "Map"].includes(subtypeName)) {
+        return subtype;
+      }
+    }
+  }
 
   if ("types" in type) {
     const found = type.types
@@ -265,7 +293,71 @@ export const tscompat = createRule({
     const browsers = browserslist(options?.browserslist);
 
     return {
-      MemberExpression(node) {
+      MemberExpression(node: TSESTree.MemberExpression) {
+        // Handle computed properties that use non-literal syntax
+        if (node.computed) {
+          if (node.property.type === "Identifier") {
+            if (node.property.name.startsWith("Symbol.")) {
+              const symbolSupport = findSupport({
+                typeName: "Symbol",
+                calleeName: node.property.name.split(".")[1],
+              });
+              const failures = getFailures({
+                support: symbolSupport,
+                browserTargets: findBrowserTargets(browsers),
+              });
+              if (failures.length) {
+                context.report({
+                  data: {
+                    typeName: "Symbol",
+                    browsers: formatBrowserList(failures),
+                  },
+                  messageId: "incompatable",
+                  node,
+                });
+              }
+            }
+          }
+          return;
+        }
+
+        // Skip check for array index access (e.g., arr[0])
+        if (node.property.type !== "Identifier") return;
+
+        const tsProp = services.esTreeNodeToTSNodeMap.get(node.property);
+        const propertySymbol = checker.getSymbolAtLocation(tsProp);
+        if (propertySymbol) {
+          const declarations = propertySymbol.getDeclarations();
+          if (declarations?.length) {
+            // Determine if all declarations come from a lib file (built-in)
+            const isBuiltin = declarations.every((decl) => {
+              const fileName = decl.getSourceFile().fileName;
+              // Adjust the check as needed to match the paths of your TS lib files
+              return (
+                fileName.includes("lib.") || fileName.includes("typescript/lib")
+              );
+            });
+            if (!isBuiltin) {
+              // If at least one declaration is not from a lib file, it's a custom method.
+              // Skip the compatibility check.
+              return;
+            }
+          }
+          // Also, if the property isn’t a function, skip the check.
+          const propertyType = checker.getTypeOfSymbolAtLocation(
+            propertySymbol,
+            tsProp
+          );
+          if (
+            !checker.getSignaturesOfType(
+              propertyType,
+              typescript.SignatureKind.Call
+            ).length
+          ) {
+            return;
+          }
+        }
+
         const checkType = (type: Type) => {
           const typeName = convertToMDNName(checker, type);
 
@@ -308,14 +400,14 @@ export const tscompat = createRule({
         const type = getType(checker, services, node.object);
         checkType(type);
       },
-      NewExpression(node) {
+      NewExpression(node: TSESTree.NewExpression) {
         // If we are doing `window.Map()`, then let `MemberExpression` handle this.
         // eslint-disable-next-line
         if (node.callee.type === "MemberExpression") return;
 
         const type = getType(checker, services, node);
         let typeName = convertToMDNName(checker, type);
-        // @ts-expect-error TODO
+        // @ts-expect-error TODO `name` can be undefined
         typeName = typeName === "any" ? node.callee.name : typeName;
 
         if (!typeName) return;
@@ -337,7 +429,8 @@ export const tscompat = createRule({
           });
         }
       },
-      CallExpression(node) {
+      CallExpression(node: TSESTree.CallExpression) {
+        // @ts-expect-error TODO `name` can be undefined
         const typeName: string = node.callee.name;
 
         if (!typeName) return;
