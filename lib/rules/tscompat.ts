@@ -319,29 +319,66 @@ export const tscompat = createRule({
 
     return {
       MemberExpression(node: TSESTree.MemberExpression) {
-        // Handle computed properties that use non-literal syntax
+        // Check for computed properties using Symbol
         if (node.computed) {
-          if (node.property.type === "Identifier") {
-            if (node.property.name.startsWith("Symbol.")) {
-              const symbolSupport = findSupport({
-                typeName: "Symbol",
-                calleeName: node.property.name.split(".")[1],
-              });
-              const failures = getFailures({
-                support: symbolSupport,
-                browserTargets: findBrowserTargets(browsers),
-              });
-              if (failures.length) {
-                context.report({
-                  data: {
-                    typeName: "Symbol",
-                    browsers: formatBrowserList(failures),
-                  },
-                  messageId: "incompatable",
-                  node,
-                });
-              }
+          let symbolName: string | null = null;
+          if (
+            node.property.type === "MemberExpression" &&
+            !node.property.computed &&
+            node.property.object.type === "Identifier" &&
+            node.property.object.name === "Symbol" &&
+            node.property.property.type === "Identifier"
+          ) {
+            symbolName = node.property.property.name;
+          }
+
+          if (!symbolName) {
+            return;
+          }
+
+          // Step 2: Get Type Checker
+          const typeChecker = context.parserServices.program.getTypeChecker();
+          const tsNode = context.parserServices.esTreeNodeToTSNodeMap.get(
+            node.object
+          );
+
+          // Step 3: Resolve Type of Base Object
+          const tsType = typeChecker.getTypeAtLocation(tsNode);
+          let baseTypeName: string | null = null;
+
+          if (tsType) {
+            // Get the Fully Qualified Type Name
+            const symbol = tsType.getSymbol();
+            if (symbol) {
+              baseTypeName = typeChecker.getFullyQualifiedName(symbol);
+            } else {
+              baseTypeName = typeChecker.typeToString(tsType);
             }
+          }
+
+          if (!baseTypeName) {
+            return;
+          }
+
+          // Step 4: Check Symbol Support in Context of Resolved Type
+          const support = findSupport({
+            typeName: baseTypeName,
+            calleeName: symbolName,
+          });
+          const failures = getFailures({
+            support,
+            browserTargets: findBrowserTargets(browsers),
+          });
+
+          if (failures.length) {
+            context.report({
+              data: {
+                typeName: `${baseTypeName}[Symbol.${symbolName}]`,
+                browsers: formatBrowserList(failures),
+              },
+              messageId: "incompatable",
+              node,
+            });
           }
           return;
         }
