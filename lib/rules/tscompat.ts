@@ -49,11 +49,26 @@ function getFailures({
   }> = [];
   for (const [name, version] of Object.entries(browserTargets)) {
     const browserSupport = support[name];
-    if (!browserSupport) continue;
-    // eslint-disable-next-line
-    const supportedSince = Number.parseFloat(browserSupport?.version_added);
-    if (version < supportedSince) {
-      supportFailures.push({ name, version, supportedSince });
+    if (browserSupport === undefined) continue;
+
+    // If MDN indicates that the feature is not supported at all, then fail.
+    if (browserSupport.version_added === false) {
+      supportFailures.push({
+        name: name as MDNBrowserName,
+        version,
+        supportedSince: Infinity,
+      });
+      continue;
+    }
+
+    // Otherwise, attempt to parse the version at which support was added.
+    const supportedSince = Number.parseFloat(browserSupport.version_added);
+    if (!Number.isNaN(supportedSince) && version < supportedSince) {
+      supportFailures.push({
+        name: name as MDNBrowserName,
+        version,
+        supportedSince,
+      });
     }
   }
   return supportFailures;
@@ -146,6 +161,12 @@ function findSupport({
   if (["Set", "Array", "Map"].includes(typeName) && calleeName) {
     support =
       bcd.javascript.builtins[typeName]?.[calleeName]?.__compat?.support;
+
+    if (!support) {
+      support =
+        bcd.javascript.builtins[typeName]?.prototype?.[calleeName]?.__compat
+          ?.support;
+    }
   }
 
   if (!support) return {};
@@ -198,6 +219,10 @@ function formatBrowserList(
 
 const replaceNameRegex = /<.*>/gmu;
 function convertToMDNName(checker: TypeChecker, type: Type): string {
+  if (checker.isArrayType(type)) {
+    return "Array";
+  }
+
   const typeName = getTypeName(checker, type)
     .replace(replaceNameRegex, "")
     .replace("Constructor", "")
@@ -334,7 +359,9 @@ export const tscompat = createRule({
               const fileName = decl.getSourceFile().fileName;
               // Adjust the check as needed to match the paths of your TS lib files
               return (
-                fileName.includes("lib.") || fileName.includes("typescript/lib")
+                fileName.includes("typescript/lib") ||
+                // this is needed so that e.g. `Array#at` is checked correctly
+                fileName.includes("@types/node/globals.d.ts")
               );
             });
             if (!isBuiltin) {
@@ -342,19 +369,6 @@ export const tscompat = createRule({
               // Skip the compatibility check.
               return;
             }
-          }
-          // Also, if the property isn’t a function, skip the check.
-          const propertyType = checker.getTypeOfSymbolAtLocation(
-            propertySymbol,
-            tsProp
-          );
-          if (
-            !checker.getSignaturesOfType(
-              propertyType,
-              typescript.SignatureKind.Call
-            ).length
-          ) {
-            return;
           }
         }
 
