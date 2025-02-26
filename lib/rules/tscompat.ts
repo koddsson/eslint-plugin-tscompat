@@ -15,7 +15,7 @@ import type {
 import type { BrowsersListBrowserName } from "../../types.js";
 
 import type { ParserServicesWithTypeInformation } from "@typescript-eslint/utils";
-import type { TSESTree } from "@typescript-eslint/typescript-estree";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/typescript-estree";
 import type { Type, UnionOrIntersectionType, TypeChecker } from "typescript";
 import type { SimpleSupportStatement } from "@mdn/browser-compat-data";
 
@@ -48,11 +48,11 @@ function getFailures({
     supportedSince: number;
   }> = [];
   for (const [name, version] of Object.entries(browserTargets)) {
-    const browserSupport = support[name];
+    const browserSupport = support[name as MDNBrowserName];
     if (browserSupport === undefined) continue;
 
     // If MDN indicates that the feature is not supported at all, then fail.
-    if (browserSupport.version_added === false) {
+    if (!browserSupport.version_added) {
       supportFailures.push({
         name: name as MDNBrowserName,
         version,
@@ -62,7 +62,7 @@ function getFailures({
     }
 
     // Otherwise, attempt to parse the version at which support was added.
-    const supportedSince = Number.parseFloat(browserSupport.version_added);
+    const supportedSince = browserSupport.version_added === true ? 0 : Number.parseFloat(browserSupport.version_added);
     if (!Number.isNaN(supportedSince) && version < supportedSince) {
       supportFailures.push({
         name: name as MDNBrowserName,
@@ -323,11 +323,11 @@ export const tscompat = createRule({
         if (node.computed) {
           let symbolName: string | null = null;
           if (
-            node.property.type === "MemberExpression" &&
+            node.property.type === AST_NODE_TYPES.MemberExpression &&
             !node.property.computed &&
-            node.property.object.type === "Identifier" &&
+            node.property.object.type === AST_NODE_TYPES.Identifier &&
             node.property.object.name === "Symbol" &&
-            node.property.property.type === "Identifier"
+            node.property.property.type === AST_NODE_TYPES.Identifier
           ) {
             symbolName = node.property.property.name;
           }
@@ -337,22 +337,21 @@ export const tscompat = createRule({
           }
 
           // Step 2: Get Type Checker
-          const typeChecker = context.parserServices.program.getTypeChecker();
-          const tsNode = context.parserServices.esTreeNodeToTSNodeMap.get(
+          const tsNode = services.esTreeNodeToTSNodeMap.get(
             node.object
           );
 
           // Step 3: Resolve Type of Base Object
-          const tsType = typeChecker.getTypeAtLocation(tsNode);
+          const tsType = checker.getTypeAtLocation(tsNode);
           let baseTypeName: string | null = null;
 
           if (tsType) {
             // Get the Fully Qualified Type Name
             const symbol = tsType.getSymbol();
             if (symbol) {
-              baseTypeName = typeChecker.getFullyQualifiedName(symbol);
+              baseTypeName = checker.getFullyQualifiedName(symbol);
             } else {
-              baseTypeName = typeChecker.typeToString(tsType);
+              baseTypeName = checker.typeToString(tsType);
             }
           }
 
@@ -384,7 +383,7 @@ export const tscompat = createRule({
         }
 
         // Skip check for array index access (e.g., arr[0])
-        if (node.property.type !== "Identifier") return;
+        if (node.property.type !== AST_NODE_TYPES.Identifier) return;
 
         const tsProp = services.esTreeNodeToTSNodeMap.get(node.property);
         const propertySymbol = checker.getSymbolAtLocation(tsProp);
@@ -454,7 +453,7 @@ export const tscompat = createRule({
       NewExpression(node: TSESTree.NewExpression) {
         // If we are doing `window.Map()`, then let `MemberExpression` handle this.
         // eslint-disable-next-line
-        if (node.callee.type === "MemberExpression") return;
+        if (node.callee.type === AST_NODE_TYPES.MemberExpression) return;
 
         const type = getType(checker, services, node);
         let typeName = convertToMDNName(checker, type);
