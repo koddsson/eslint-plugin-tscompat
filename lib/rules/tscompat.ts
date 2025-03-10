@@ -382,10 +382,10 @@ export const tscompat = createRule({
         },
       ],
     },
+    defaultOptions: [],
     messages: {
       incompatable: "{{typeName}} is not supported in {{browsers}}",
     },
   },
   name: "tscompat",
-  defaultOptions: [],
 });
