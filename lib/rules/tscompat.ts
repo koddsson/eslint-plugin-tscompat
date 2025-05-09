@@ -15,7 +15,7 @@ import type {
 import type { BrowsersListBrowserName } from "../../types.js";
 
 import type { ParserServicesWithTypeInformation } from "@typescript-eslint/utils";
-import type { TSESTree } from "@typescript-eslint/typescript-estree";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/typescript-estree";
 import type { Type, UnionOrIntersectionType, TypeChecker } from "typescript";
 import type { SimpleSupportStatement } from "@mdn/browser-compat-data";
 
@@ -48,12 +48,27 @@ function getFailures({
     supportedSince: number;
   }> = [];
   for (const [name, version] of Object.entries(browserTargets)) {
-    const browserSupport = support[name];
-    if (!browserSupport) continue;
-    // eslint-disable-next-line
-    const supportedSince = Number.parseFloat(browserSupport?.version_added);
-    if (version < supportedSince) {
-      supportFailures.push({ name, version, supportedSince });
+    const browserSupport = support[name as MDNBrowserName];
+    if (browserSupport === undefined) continue;
+
+    // If MDN indicates that the feature is not supported at all, then fail.
+    if (!browserSupport.version_added) {
+      supportFailures.push({
+        name: name as MDNBrowserName,
+        version,
+        supportedSince: Infinity,
+      });
+      continue;
+    }
+
+    // Otherwise, attempt to parse the version at which support was added.
+    const supportedSince = browserSupport.version_added === true ? 0 : Number.parseFloat(browserSupport.version_added);
+    if (!Number.isNaN(supportedSince) && version < supportedSince) {
+      supportFailures.push({
+        name: name as MDNBrowserName,
+        version,
+        supportedSince,
+      });
     }
   }
   return supportFailures;
@@ -142,6 +157,18 @@ function findSupport({
     support = bcd.webassembly.api[`${calleeName}_static`]?.__compat?.support;
   }
 
+  // First check built-in types (e.g., Set, Array)
+  if (["Set", "Array", "Map"].includes(typeName) && calleeName) {
+    support =
+      bcd.javascript.builtins[typeName]?.[calleeName]?.__compat?.support;
+
+    if (!support) {
+      support =
+        bcd.javascript.builtins[typeName]?.prototype?.[calleeName]?.__compat
+          ?.support;
+    }
+  }
+
   if (!support) return {};
 
   // eslint-disable-next-line prefer-const
@@ -190,23 +217,39 @@ function formatBrowserList(
     .join(", ");
 }
 
-function convertToMDNName(
-  checker: TypeChecker,
-  type: Type,
-): string | undefined {
-  const typeName = getTypeName(checker, type)
-    .replace(/<.*>/gm, "")
-    .replace("Constructor", "")
-    .replace("typeof ", "");
-
-  if (typeName === "string") {
-    return "String";
-  }
-
-  if (typeName.endsWith("[]")) {
+const replaceNameRegex = /<.*>/gmu;
+function convertToMDNName(checker: TypeChecker, type: Type): string {
+  if (checker.isArrayType(type)) {
     return "Array";
   }
 
+  const typeName = getTypeName(checker, type)
+    .replace(replaceNameRegex, "")
+    .replace("Constructor", "")
+    .replace("typeof ", "");
+
+  // Safely check for base types
+  const symbol = type.getSymbol();
+  if (symbol) {
+    // Only check classes/interfaces
+    if (symbol.getFlags() & (SymbolFlags.Class | SymbolFlags.Interface)) {
+      // @ts-expect-error TS(2345): we check if its an interface above
+      const baseTypes = checker.getBaseTypes(type);
+      if (baseTypes) {
+        for (const baseType of baseTypes) {
+          const baseTypeName = convertToMDNName(checker, baseType);
+          if (
+            ["Set", "Array", "Map", "WeakMap", "WeakSet"].includes(baseTypeName)
+          ) {
+            return baseTypeName;
+          }
+        }
+      }
+    }
+  }
+
+  if (typeName === "string") return "String";
+  if (typeName.endsWith("[]")) return "Array";
   return typeName;
 }
 
@@ -217,7 +260,17 @@ function getType(
 ): Type {
   let type = getConstrainedTypeAtLocation(services, node);
   // If this is a union type we gotta handle that specfically
+
+  // If this is a union type we gotta handle that specifically
   // TODO: Handle this better actually
+  if (type.isUnionOrIntersection()) {
+    for (const subtype of type.types) {
+      const subtypeName = convertToMDNName(checker, subtype);
+      if (["Set", "Array", "Map"].includes(subtypeName)) {
+        return subtype;
+      }
+    }
+  }
 
   if ("types" in type) {
     const found = type.types
@@ -265,7 +318,96 @@ export const tscompat = createRule({
     const browsers = browserslist(options?.browserslist);
 
     return {
-      MemberExpression(node) {
+      MemberExpression(node: TSESTree.MemberExpression) {
+        // Check for computed properties using Symbol
+        if (node.computed) {
+          let symbolName: string | null = null;
+          if (
+            node.property.type === AST_NODE_TYPES.MemberExpression &&
+            !node.property.computed &&
+            node.property.object.type === AST_NODE_TYPES.Identifier &&
+            node.property.object.name === "Symbol" &&
+            node.property.property.type === AST_NODE_TYPES.Identifier
+          ) {
+            symbolName = node.property.property.name;
+          }
+
+          if (!symbolName) {
+            return;
+          }
+
+          // Step 2: Get Type Checker
+          const tsNode = services.esTreeNodeToTSNodeMap.get(
+            node.object
+          );
+
+          // Step 3: Resolve Type of Base Object
+          const tsType = checker.getTypeAtLocation(tsNode);
+          let baseTypeName: string | null = null;
+
+          if (tsType) {
+            // Get the Fully Qualified Type Name
+            const symbol = tsType.getSymbol();
+            if (symbol) {
+              baseTypeName = checker.getFullyQualifiedName(symbol);
+            } else {
+              baseTypeName = checker.typeToString(tsType);
+            }
+          }
+
+          if (!baseTypeName) {
+            return;
+          }
+
+          // Step 4: Check Symbol Support in Context of Resolved Type
+          const support = findSupport({
+            typeName: baseTypeName,
+            calleeName: symbolName,
+          });
+          const failures = getFailures({
+            support,
+            browserTargets: findBrowserTargets(browsers),
+          });
+
+          if (failures.length) {
+            context.report({
+              data: {
+                typeName: `${baseTypeName}[Symbol.${symbolName}]`,
+                browsers: formatBrowserList(failures),
+              },
+              messageId: "incompatable",
+              node,
+            });
+          }
+          return;
+        }
+
+        // Skip check for array index access (e.g., arr[0])
+        if (node.property.type !== AST_NODE_TYPES.Identifier) return;
+
+        const tsProp = services.esTreeNodeToTSNodeMap.get(node.property);
+        const propertySymbol = checker.getSymbolAtLocation(tsProp);
+        if (propertySymbol) {
+          const declarations = propertySymbol.getDeclarations();
+          if (declarations?.length) {
+            // Determine if all declarations come from a lib file (built-in)
+            const isBuiltin = declarations.every((decl) => {
+              const fileName = decl.getSourceFile().fileName;
+              // Adjust the check as needed to match the paths of your TS lib files
+              return (
+                fileName.includes("typescript/lib") ||
+                // this is needed so that e.g. `Array#at` is checked correctly
+                fileName.includes("@types/node/globals.d.ts")
+              );
+            });
+            if (!isBuiltin) {
+              // If at least one declaration is not from a lib file, it's a custom method.
+              // Skip the compatibility check.
+              return;
+            }
+          }
+        }
+
         const checkType = (type: Type) => {
           const typeName = convertToMDNName(checker, type);
 
@@ -308,14 +450,14 @@ export const tscompat = createRule({
         const type = getType(checker, services, node.object);
         checkType(type);
       },
-      NewExpression(node) {
+      NewExpression(node: TSESTree.NewExpression) {
         // If we are doing `window.Map()`, then let `MemberExpression` handle this.
         // eslint-disable-next-line
-        if (node.callee.type === "MemberExpression") return;
+        if (node.callee.type === AST_NODE_TYPES.MemberExpression) return;
 
         const type = getType(checker, services, node);
         let typeName = convertToMDNName(checker, type);
-        // @ts-expect-error TODO
+        // @ts-expect-error TODO `name` can be undefined
         typeName = typeName === "any" ? node.callee.name : typeName;
 
         if (!typeName) return;
@@ -337,7 +479,8 @@ export const tscompat = createRule({
           });
         }
       },
-      CallExpression(node) {
+      CallExpression(node: TSESTree.CallExpression) {
+        // @ts-expect-error TODO `name` can be undefined
         const typeName: string = node.callee.name;
 
         if (!typeName) return;
