@@ -16,7 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mdn/browser-compat-data": "^5.5.22",
+    "@mdn/browser-compat-data": "^6.0.15",
     "@typescript-eslint/type-utils": "^8.0.1",
     "@typescript-eslint/utils": "^8.0.0",
     "browserslist": "^4.23.0"
