@@ -18,9 +18,10 @@ const __dirname = path.dirname(__filename);
 const tsconfigRootDir = path.join(__dirname, "./fixture/");
 
 export const ruleTester = new RuleTester({
-  parser: "@typescript-eslint/parser",
-  parserOptions: {
-    tsconfigRootDir,
-    project: "./tsconfig.json",
+  languageOptions: {
+    parserOptions: {
+      tsconfigRootDir,
+      project: "./tsconfig.json",
+    },
   },
 });
