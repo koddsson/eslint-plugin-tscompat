@@ -169,7 +169,7 @@ ruleTester.run("tscompat", tscompat, {
       code: "document.hasFocus()",
       options: [
         {
-          browserslist: ["Chrome 27"],
+          browserslist: ["Chrome 34"],
         },
       ],
     },
