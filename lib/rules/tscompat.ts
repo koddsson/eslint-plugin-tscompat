@@ -525,6 +525,7 @@ export const tscompat = createRule({
         },
       ],
     },
+    defaultOptions: [{ browserslist: [">0.3%", "not dead"] }],
     messages: {
       incompatable: "{{typeName}} is not supported in {{browsers}}",
     },
