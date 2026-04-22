@@ -397,7 +397,9 @@ export const tscompat = createRule({
               return (
                 fileName.includes("typescript/lib") ||
                 // this is needed so that e.g. `Array#at` is checked correctly
-                fileName.includes("@types/node/globals.d.ts")
+                fileName.includes("@types/node/globals.d.ts") ||
+                // @types/node >=25 moved web globals (e.g. fetch) here
+                fileName.includes("@types/node/web-globals/")
               );
             });
             if (!isBuiltin) {
