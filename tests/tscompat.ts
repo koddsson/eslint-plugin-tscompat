@@ -6,6 +6,41 @@ import { tscompat } from "../lib/rules/tscompat.js";
 ruleTester.run("tscompat", tscompat, {
   valid: [
     {
+      code: "Promise.allSettled()",
+      options: [{ browserslist: ["chrome 72"] }],
+      settings: { polyfills: ["Promise.allSettled"] },
+    },
+    {
+      code: "Promise.allSettled()",
+      options: [{ browserslist: ["chrome 72"] }],
+      settings: { polyfills: ["Promise"] },
+    },
+    {
+      code: "fetch('example.com')",
+      options: [{ browserslist: ["chrome 39"] }],
+      settings: { polyfills: ["fetch"] },
+    },
+    {
+      code: "window.fetch('example.com')",
+      options: [{ browserslist: ["chrome 39"] }],
+      settings: { polyfills: ["fetch"] },
+    },
+    {
+      code: "window.fetch('example.com')",
+      options: [{ browserslist: ["chrome 39"] }],
+      settings: { polyfills: ["window.fetch"] },
+    },
+    {
+      code: "[1, 2, 3].at(1)",
+      options: [{ browserslist: ["chrome 70"] }],
+      settings: { polyfills: ["Array.prototype.at"] },
+    },
+    {
+      code: "new IntersectionObserver(() => {}, {})",
+      options: [{ browserslist: ["chrome 49"] }],
+      settings: { polyfills: ["IntersectionObserver"] },
+    },
+    {
       code: "const s = new Set(); s.intersection();",
       options: [
         {
@@ -275,6 +310,24 @@ ruleTester.run("tscompat", tscompat, {
     },
   ],
   invalid: [
+    {
+      code: "Promise.allSettled()",
+      options: [{ browserslist: ["chrome 72"] }],
+      settings: { polyfills: ["Promise.all"] },
+      errors: [{ message: "Promise.allSettled() is not supported in Chrome 72" }],
+    },
+    {
+      code: "[1, 2, 3].at(1)",
+      options: [{ browserslist: ["chrome 70"] }],
+      settings: { polyfills: ["String.prototype.at"] },
+      errors: [{ message: "Array.at() is not supported in Chrome 70" }],
+    },
+    {
+      code: "fetch('example.com')",
+      options: [{ browserslist: ["chrome 39"] }],
+      settings: { polyfills: ["IntersectionObserver"] },
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
     {
       code: "if (!fetch) {\n          fetch('example.com')\n        }",
       options: [{ browserslist: ["chrome 39"] }],
