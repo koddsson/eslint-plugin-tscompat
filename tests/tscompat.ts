@@ -38,44 +38,96 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
-      code: "if (fetch) {\n          fetch()\n        }",
-      options: [
-        {
-          browserslist: ["ExplorerMobile 10"],
-        },
-      ],
+      code: "if (fetch) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
     },
     {
-      code: "if (Array.prototype.flat) {\n          new Array.flat()\n        }",
-      options: [
-        {
-          browserslist: ["ExplorerMobile 10"],
-        },
-      ],
+      code: "if (Array.prototype.flat) {\n          [[1]].flat()\n        }",
+      options: [{ browserslist: ["chrome 60"] }],
     },
     {
-      code: "if (fetch && otherConditions) {\n          fetch()\n        }",
-      options: [
-        {
-          browserslist: ["ExplorerMobile 10"],
-        },
-      ],
+      code: "declare const otherConditions: boolean;\nif (fetch && otherConditions) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
     },
     {
-      code: "if (window.fetch) {\n          fetch()\n        }",
-      options: [
-        {
-          browserslist: ["ExplorerMobile 10"],
-        },
-      ],
+      code: "if (window.fetch) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
     },
     {
-      code: "if ('fetch' in window) {\n          fetch()\n        }",
-      options: [
-        {
-          browserslist: ["ExplorerMobile 10"],
-        },
-      ],
+      code: "if (window.fetch) {\n          window.fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "if ('fetch' in window) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "if (typeof fetch !== 'undefined') {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "if (typeof window.fetch === 'function') {\n          window.fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "if (window?.fetch) {\n          window?.fetch?.('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "window.fetch && window.fetch('example.com')",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "const p = window.fetch ? window.fetch('example.com') : null",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "if (window.IntersectionObserver) {\n          new IntersectionObserver(() => {}, {})\n        }",
+      options: [{ browserslist: ["chrome 49"] }],
+    },
+    {
+      code: "if (Array.prototype.at) {\n          [1, 2, 3].at(1)\n        }",
+      options: [{ browserslist: ["chrome 70"] }],
+    },
+    {
+      code: "const a: number[] = [];\nif (a.at) {\n          [1, 2, 3].at(1)\n        }",
+      options: [{ browserslist: ["chrome 70"] }],
+    },
+    {
+      code: "if (globalThis.fetch) {\n          self.fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "function f() {\n  if (!fetch) return;\n  fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "function f() {\n  if (!window.fetch) return;\n  window.fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "function f() {\n  if (typeof fetch === 'undefined') {\n    throw new Error('no fetch');\n  }\n  fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "function f() {\n  if (!('fetch' in window) || !window.IntersectionObserver) return;\n  fetch('example.com');\n  new IntersectionObserver(() => {}, {});\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "for (const url of ['example.com']) {\n  if (!fetch) continue;\n  fetch(url);\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "function f() {\n  if (!fetch) return;\n  if (Math.random() > 0.5) {\n    fetch('example.com');\n  }\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "if (!fetch) {} else {\n  fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+    },
+    {
+      code: "!window.fetch || window.fetch('example.com')",
+      options: [{ browserslist: ["chrome 39"] }],
     },
     {
       code: "window",
@@ -223,6 +275,81 @@ ruleTester.run("tscompat", tscompat, {
     },
   ],
   invalid: [
+    {
+      code: "if (!fetch) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "if (window.fetch) {} else {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "declare const otherConditions: boolean;\nif (fetch || otherConditions) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "if (window.IntersectionObserver) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "declare const client: { fetch?: (url: string) => void };\nif (client.fetch) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "declare const client: { fetch?: (url: string) => void };\nif ('fetch' in client) {\n          fetch('example.com')\n        }",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "declare const foo: { at?: () => void };\nif (foo.at) {\n          [1, 2, 3].at(1)\n        }",
+      options: [{ browserslist: ["chrome 70"] }],
+      errors: [{ message: "Array.at() is not supported in Chrome 70" }],
+    },
+    {
+      code: "if (String.prototype.at) {\n          [1, 2, 3].at(1)\n        }",
+      options: [{ browserslist: ["chrome 70"] }],
+      errors: [{ message: "Array.at() is not supported in Chrome 70" }],
+    },
+    {
+      code: "function f() {\n  if (!fetch) {\n    console.log('no fetch');\n  }\n  fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "function f(x: boolean) {\n  if (!fetch) {\n    if (x) return;\n  }\n  fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "function f() {\n  if (fetch) return;\n  fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "function f() {\n  fetch('example.com');\n  if (!fetch) return;\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "declare const otherConditions: boolean;\nfunction f() {\n  if (!fetch && otherConditions) return;\n  fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "declare const client: { fetch?: (url: string) => void };\nfunction f() {\n  if (!client.fetch) return;\n  fetch('example.com');\n}",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
+    {
+      code: "fetch && console.log('has fetch') || fetch('example.com')",
+      options: [{ browserslist: ["chrome 39"] }],
+      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+    },
     {
       code: "const s = new Set(); s.intersection();",
       options: [

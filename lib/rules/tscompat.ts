@@ -16,7 +16,12 @@ import type { BrowsersListBrowserName } from "../../types.js";
 
 import type { ParserServicesWithTypeInformation } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/typescript-estree";
-import type { Type, UnionOrIntersectionType, TypeChecker } from "typescript";
+import type {
+  Symbol as TSSymbol,
+  Type,
+  UnionOrIntersectionType,
+  TypeChecker,
+} from "typescript";
 import type { SimpleSupportStatement } from "@mdn/browser-compat-data";
 
 const createRule = ESLintUtils.RuleCreator(
@@ -305,10 +310,293 @@ function formatTypeName(typeName: string): string {
   return typeName;
 }
 
+type GuardNode =
+  | TSESTree.Identifier
+  | TSESTree.MemberExpression
+  | TSESTree.BinaryExpression;
+
+function getGuardName(node: TSESTree.MemberExpression): string | undefined {
+  if (!node.computed && node.property.type === AST_NODE_TYPES.Identifier) {
+    return node.property.name;
+  }
+  if (
+    node.property.type === AST_NODE_TYPES.Literal &&
+    typeof node.property.value === "string"
+  ) {
+    return node.property.value;
+  }
+  return undefined;
+}
+
+function collectGuards(
+  test: TSESTree.Node,
+  guards: GuardNode[] = [],
+): GuardNode[] {
+  switch (test.type) {
+    case AST_NODE_TYPES.Identifier:
+    case AST_NODE_TYPES.MemberExpression:
+      guards.push(test);
+      return guards;
+    case AST_NODE_TYPES.ChainExpression:
+      return collectGuards(test.expression, guards);
+    case AST_NODE_TYPES.LogicalExpression:
+      if (test.operator === "&&") {
+        collectGuards(test.left, guards);
+        collectGuards(test.right, guards);
+      }
+      return guards;
+    case AST_NODE_TYPES.UnaryExpression:
+      if (
+        test.operator === "!" &&
+        test.argument.type === AST_NODE_TYPES.UnaryExpression &&
+        test.argument.operator === "!"
+      ) {
+        collectGuards(test.argument.argument, guards);
+      }
+      return guards;
+    case AST_NODE_TYPES.BinaryExpression: {
+      if (
+        test.operator === "in" &&
+        test.left.type === AST_NODE_TYPES.Literal &&
+        typeof test.left.value === "string"
+      ) {
+        guards.push(test);
+        return guards;
+      }
+      const typeofCheck = getTypeofCheck(test);
+      if (typeofCheck?.assertsDefined) {
+        collectGuards(typeofCheck.argument, guards);
+      }
+      return guards;
+    }
+    default:
+      return guards;
+  }
+}
+
+function collectNegatedGuards(
+  test: TSESTree.Node,
+  guards: GuardNode[] = [],
+): GuardNode[] {
+  switch (test.type) {
+    case AST_NODE_TYPES.UnaryExpression:
+      if (test.operator === "!") collectGuards(test.argument, guards);
+      return guards;
+    case AST_NODE_TYPES.LogicalExpression:
+      if (test.operator === "||") {
+        collectNegatedGuards(test.left, guards);
+        collectNegatedGuards(test.right, guards);
+      }
+      return guards;
+    case AST_NODE_TYPES.BinaryExpression: {
+      const typeofCheck = getTypeofCheck(test);
+      if (typeofCheck && !typeofCheck.assertsDefined) {
+        collectGuards(typeofCheck.argument, guards);
+      }
+      return guards;
+    }
+    default:
+      return guards;
+  }
+}
+
+function getTypeofCheck(
+  test: TSESTree.BinaryExpression,
+): { argument: TSESTree.Expression; assertsDefined: boolean } | undefined {
+  const [typeofSide, literalSide] =
+    test.left.type === AST_NODE_TYPES.UnaryExpression
+      ? [test.left, test.right]
+      : [test.right, test.left];
+  if (
+    typeofSide.type !== AST_NODE_TYPES.UnaryExpression ||
+    typeofSide.operator !== "typeof" ||
+    literalSide.type !== AST_NODE_TYPES.Literal
+  ) {
+    return undefined;
+  }
+  const isEquality = test.operator === "===" || test.operator === "==";
+  const isInequality = test.operator === "!==" || test.operator === "!=";
+  if (!isEquality && !isInequality) return undefined;
+
+  if (literalSide.value === "undefined") {
+    return { argument: typeofSide.argument, assertsDefined: isInequality };
+  }
+  if (literalSide.value === "function" || literalSide.value === "object") {
+    return { argument: typeofSide.argument, assertsDefined: isEquality };
+  }
+  return undefined;
+}
+
+function isGuardExpression(test: TSESTree.Node, node: TSESTree.Node): boolean {
+  return [...collectGuards(test), ...collectNegatedGuards(test)].includes(
+    node as GuardNode,
+  );
+}
+
+function alwaysExits(statement: TSESTree.Statement): boolean {
+  switch (statement.type) {
+    case AST_NODE_TYPES.ReturnStatement:
+    case AST_NODE_TYPES.ThrowStatement:
+    case AST_NODE_TYPES.BreakStatement:
+    case AST_NODE_TYPES.ContinueStatement:
+      return true;
+    case AST_NODE_TYPES.BlockStatement:
+      return statement.body.some(alwaysExits);
+    default:
+      return false;
+  }
+}
+
+function getPrecedingStatements(
+  parent: TSESTree.Node,
+  child: TSESTree.Node,
+): TSESTree.Node[] {
+  let body: TSESTree.Node[];
+  if (
+    parent.type === AST_NODE_TYPES.BlockStatement ||
+    parent.type === AST_NODE_TYPES.Program ||
+    parent.type === AST_NODE_TYPES.StaticBlock
+  ) {
+    body = parent.body;
+  } else if (parent.type === AST_NODE_TYPES.SwitchCase) {
+    body = parent.consequent;
+  } else {
+    return [];
+  }
+  const index = body.indexOf(child);
+  return index === -1 ? [] : body.slice(0, index);
+}
+
+function createGuardDetector(
+  services: ParserServicesWithTypeInformation,
+  checker: TypeChecker,
+) {
+  let globals: Map<string, TSSymbol> | undefined;
+
+  function getGlobal(node: TSESTree.Node, name: string): TSSymbol | undefined {
+    if (!globals) {
+      const sourceFile = services.esTreeNodeToTSNodeMap.get(node).getSourceFile();
+      globals = new Map(
+        checker
+          .getSymbolsInScope(sourceFile, SymbolFlags.Value)
+          .map((symbol) => [symbol.name, symbol]),
+      );
+    }
+    return globals.get(name);
+  }
+
+  function isGlobalObject(node: TSESTree.Node): boolean {
+    const type = services.getTypeAtLocation(node);
+    const types = type.isIntersection() ? type.types : [type];
+    return types.some((t) =>
+      ["Window", "typeof globalThis"].includes(getTypeName(checker, t)),
+    );
+  }
+
+  function getPropertySymbol(
+    object: TSESTree.Node,
+    name: string,
+  ): TSSymbol | undefined {
+    // `window.fetch` is declared on `WindowOrWorkerGlobalScope` but is the same feature as the global `fetch`.
+    if (isGlobalObject(object)) {
+      const global = getGlobal(object, name);
+      if (global) return global;
+    }
+    return checker.getPropertyOfType(services.getTypeAtLocation(object), name);
+  }
+
+  function getFeatureSymbol(node: TSESTree.Node): TSSymbol | undefined {
+    if (node.type === AST_NODE_TYPES.Identifier) {
+      const symbol = services.getSymbolAtLocation(node);
+      return symbol && symbol.flags & SymbolFlags.Alias
+        ? checker.getAliasedSymbol(symbol)
+        : symbol;
+    }
+    if (node.type === AST_NODE_TYPES.MemberExpression) {
+      const name = getGuardName(node);
+      return name ? getPropertySymbol(node.object, name) : undefined;
+    }
+    if (
+      node.type === AST_NODE_TYPES.BinaryExpression &&
+      node.left.type === AST_NODE_TYPES.Literal &&
+      typeof node.left.value === "string"
+    ) {
+      return getPropertySymbol(node.right, node.left.value);
+    }
+    return undefined;
+  }
+
+  // Members of generic types (e.g. `Array<number>.flat`) resolve to distinct instantiated symbols, so compare declarations.
+  function isSameFeature(a: TSSymbol, b: TSSymbol): boolean {
+    if (a === b) return true;
+    const declarations = new Set(b.getDeclarations());
+    return (a.getDeclarations() ?? []).some((d) => declarations.has(d));
+  }
+
+  return function isFeatureGuarded(
+    node: TSESTree.Node,
+    feature: TSESTree.Node,
+  ): boolean {
+    let featureSymbol: TSSymbol | undefined | null = null;
+    let child: TSESTree.Node = node;
+    for (
+      let parent = node.parent;
+      parent;
+      child = parent, parent = parent.parent
+    ) {
+      const guards: GuardNode[] = [];
+      if (
+        parent.type === AST_NODE_TYPES.IfStatement ||
+        parent.type === AST_NODE_TYPES.ConditionalExpression
+      ) {
+        if (child === parent.test) {
+          if (isGuardExpression(parent.test, node)) return true;
+        } else if (child === parent.consequent) {
+          collectGuards(parent.test, guards);
+        } else {
+          collectNegatedGuards(parent.test, guards);
+        }
+      } else if (
+        parent.type === AST_NODE_TYPES.LogicalExpression &&
+        (parent.operator === "&&" || parent.operator === "||")
+      ) {
+        if (child === parent.left) {
+          if (isGuardExpression(parent.left, node)) return true;
+        } else if (parent.operator === "&&") {
+          collectGuards(parent.left, guards);
+        } else {
+          collectNegatedGuards(parent.left, guards);
+        }
+      } else {
+        for (const statement of getPrecedingStatements(parent, child)) {
+          if (
+            statement.type === AST_NODE_TYPES.IfStatement &&
+            alwaysExits(statement.consequent)
+          ) {
+            collectNegatedGuards(statement.test, guards);
+          }
+        }
+      }
+
+      if (guards.length === 0) continue;
+      if (featureSymbol === null) featureSymbol = getFeatureSymbol(feature);
+      if (!featureSymbol) return false;
+      for (const guard of guards) {
+        const guardSymbol = getFeatureSymbol(guard);
+        if (guardSymbol && isSameFeature(featureSymbol, guardSymbol)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+}
+
 export const tscompat = createRule({
   create(context) {
     const services = ESLintUtils.getParserServices(context);
     const checker = services.program.getTypeChecker();
+    const isFeatureGuarded = createGuardDetector(services, checker);
 
     // @ts-expect-error TODO
     const options = context.options[0];
@@ -384,6 +672,8 @@ export const tscompat = createRule({
 
         // Skip check for array index access (e.g., arr[0])
         if (node.property.type !== AST_NODE_TYPES.Identifier) return;
+
+        if (isFeatureGuarded(node, node)) return;
 
         const tsProp = services.esTreeNodeToTSNodeMap.get(node.property);
         const propertySymbol = checker.getSymbolAtLocation(tsProp);
@@ -463,6 +753,7 @@ export const tscompat = createRule({
         typeName = typeName === "any" ? node.callee.name : typeName;
 
         if (!typeName) return;
+        if (isFeatureGuarded(node, node.callee)) return;
 
         const support = findSupport({ typeName, calleeName: undefined });
         const browserTargets = findBrowserTargets(browsers);
@@ -486,6 +777,7 @@ export const tscompat = createRule({
         const typeName: string = node.callee.name;
 
         if (!typeName) return;
+        if (isFeatureGuarded(node, node.callee)) return;
 
         const support = findSupport({ typeName, calleeName: undefined });
         const browserTargets = findBrowserTargets(browsers);
