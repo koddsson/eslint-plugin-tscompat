@@ -3,6 +3,7 @@
     "strict": true,
     "module": "nodenext",
     "lib": ["DOM", "ESNEXT"],
+    "types": ["node"],
     "checkJs": true
   },
   "include": ["tests", "lib", "*.js", "*.ts"]
