@@ -1005,6 +1005,16 @@ ruleTester.run("tscompat", tscompat, {
       ],
     },
     {
+      code: "new PaymentRequest([], { total: { label: 'Total', amount: { currency: 'USD', value: '1' } } })",
+      errors: [
+        {
+          message: "PaymentRequest is not supported in Firefox 130",
+          type: "NewExpression",
+        },
+      ],
+      options: [{ browserslist: ["firefox 130"] }],
+    },
+    {
       code: "window.requestIdleCallback(() => {})",
       errors: [
         {
