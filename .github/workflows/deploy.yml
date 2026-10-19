@@ -38,11 +38,7 @@ jobs:
       - run: npm version ${TAG_NAME} --git-tag-version=false
         env:
           TAG_NAME: ${{ github.ref_name }}
-      - run: npm publish --provenance --access public --tag next
+      - run: npm publish --access public --tag next
         if: "github.event.release.prerelease"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
-      - run: npm publish --provenance --access public
+      - run: npm publish --access public
         if: "!github.event.release.prerelease"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.npm_token }}

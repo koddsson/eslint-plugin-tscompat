@@ -2,6 +2,10 @@
   "name": "@koddsson/eslint-plugin-tscompat",
   "version": "0.0.0",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koddsson/eslint-plugin-tscompat.git"
+  },
   "type": "module",
   "scripts": {
     "lint": "eslint lib/ tests/ index.js",
