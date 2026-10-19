@@ -1,4 +1,5 @@
 import browserslist from "browserslist";
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import { ruleTester } from "./test-helper.js";
 import { tscompat } from "../lib/rules/tscompat.js";
@@ -314,94 +315,112 @@ ruleTester.run("tscompat", tscompat, {
       code: "Promise.allSettled()",
       options: [{ browserslist: ["chrome 72"] }],
       settings: { polyfills: ["Promise.all"] },
-      errors: [{ message: "Promise.allSettled() is not supported in Chrome 72" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "Promise.allSettled()", browsers: "Chrome 72" } }],
     },
     {
       code: "[1, 2, 3].at(1)",
       options: [{ browserslist: ["chrome 70"] }],
       settings: { polyfills: ["String.prototype.at"] },
-      errors: [{ message: "Array.at() is not supported in Chrome 70" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "Array.at()", browsers: "Chrome 70" } }],
     },
     {
       code: "fetch('example.com')",
       options: [{ browserslist: ["chrome 39"] }],
       settings: { polyfills: ["IntersectionObserver"] },
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "if (!fetch) {\n          fetch('example.com')\n        }",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "if (window.fetch) {} else {\n          fetch('example.com')\n        }",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "declare const otherConditions: boolean;\nif (fetch || otherConditions) {\n          fetch('example.com')\n        }",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "if (window.IntersectionObserver) {\n          fetch('example.com')\n        }",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "declare const client: { fetch?: (url: string) => void };\nif (client.fetch) {\n          fetch('example.com')\n        }",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "declare const client: { fetch?: (url: string) => void };\nif ('fetch' in client) {\n          fetch('example.com')\n        }",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "declare const foo: { at?: () => void };\nif (foo.at) {\n          [1, 2, 3].at(1)\n        }",
       options: [{ browserslist: ["chrome 70"] }],
-      errors: [{ message: "Array.at() is not supported in Chrome 70" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "Array.at()", browsers: "Chrome 70" } }],
     },
     {
       code: "if (String.prototype.at) {\n          [1, 2, 3].at(1)\n        }",
       options: [{ browserslist: ["chrome 70"] }],
-      errors: [{ message: "Array.at() is not supported in Chrome 70" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "Array.at()", browsers: "Chrome 70" } }],
     },
     {
       code: "function f() {\n  if (!fetch) {\n    console.log('no fetch');\n  }\n  fetch('example.com');\n}",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "function f(x: boolean) {\n  if (!fetch) {\n    if (x) return;\n  }\n  fetch('example.com');\n}",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "function f() {\n  if (fetch) return;\n  fetch('example.com');\n}",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "function f() {\n  fetch('example.com');\n  if (!fetch) return;\n}",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "declare const otherConditions: boolean;\nfunction f() {\n  if (!fetch && otherConditions) return;\n  fetch('example.com');\n}",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "declare const client: { fetch?: (url: string) => void };\nfunction f() {\n  if (!client.fetch) return;\n  fetch('example.com');\n}",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "fetch && console.log('has fetch') || fetch('example.com')",
       options: [{ browserslist: ["chrome 39"] }],
-      errors: [{ message: "fetch() is not supported in Chrome 39" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" } }],
     },
     {
       code: "const s = new Set(); s.intersection();",
@@ -411,14 +430,16 @@ ruleTester.run("tscompat", tscompat, {
         },
       ],
       errors: [
-        { message: "Set.intersection() is not supported in Chrome 121" },
+        { messageId: "incompatable",
+          data: { typeName: "Set.intersection()", browsers: "Chrome 121" } },
       ],
     },
     {
       code: `const a = [1,2,3]; a.at(1);`,
       options: [{ browserslist: ["chrome >= 70", "firefox >= 80"] }],
       errors: [
-        { message: "Array.at() is not supported in Firefox 80, Chrome 70" },
+        { messageId: "incompatable",
+          data: { typeName: "Array.at()", browsers: "Firefox 80, Chrome 70" } },
       ],
     },
     {
@@ -435,8 +456,8 @@ ruleTester.run("tscompat", tscompat, {
       ],
       errors: [
         {
-          message:
-            "Promise.allSettled() is not supported in Safari 12, Chrome 72",
+          messageId: "incompatable",
+          data: { typeName: "Promise.allSettled()", browsers: "Safari 12, Chrome 72" },
         },
       ],
     },
@@ -445,8 +466,9 @@ ruleTester.run("tscompat", tscompat, {
       options: [{ browserslist: ["chrome 31"] }],
       errors: [
         {
-          message: "ServiceWorker is not supported in Chrome 31",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "ServiceWorker", browsers: "Chrome 31" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
     },
@@ -455,8 +477,9 @@ ruleTester.run("tscompat", tscompat, {
       options: [{ browserslist: ["chrome 49"] }],
       errors: [
         {
-          message: "IntersectionObserver is not supported in Chrome 49",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "IntersectionObserver", browsers: "Chrome 49" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
     },
@@ -464,7 +487,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "window?.fetch?.('example.com')",
       errors: [
         {
-          message: "window.fetch() is not supported in Chrome 39",
+          messageId: "incompatable",
+          data: { typeName: "window.fetch()", browsers: "Chrome 39" },
         },
       ],
       options: [
@@ -477,14 +501,16 @@ ruleTester.run("tscompat", tscompat, {
       code: "navigator.hardwareConcurrency;\n        navigator.serviceWorker;\n        new SharedWorker();",
       errors: [
         {
-          message:
-            "Navigator.hardwareConcurrency() is not supported in Chrome 4",
+          messageId: "incompatable",
+          data: { typeName: "Navigator.hardwareConcurrency()", browsers: "Chrome 4" },
         },
         {
-          message: "Navigator.serviceWorker() is not supported in Chrome 4",
+          messageId: "incompatable",
+          data: { typeName: "Navigator.serviceWorker()", browsers: "Chrome 4" },
         },
         {
-          message: "SharedWorker is not supported in Chrome 4",
+          messageId: "incompatable",
+          data: { typeName: "SharedWorker", browsers: "Chrome 4" },
         },
       ],
       options: [
@@ -497,7 +523,8 @@ ruleTester.run("tscompat", tscompat, {
       code: '// it should throw an error here, but it doesn\'t\n        const event = new CustomEvent("cat", {\n          detail: {\n            hazcheeseburger: true\n          }\n        });\n        window.dispatchEvent(event);',
       errors: [
         {
-          message: "CustomEvent is not supported in Chrome 4",
+          messageId: "incompatable",
+          data: { typeName: "CustomEvent", browsers: "Chrome 4" },
         },
       ],
       options: [
@@ -510,7 +537,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "Array.from()",
       errors: [
         {
-          message: "Array.from() is not supported in Chrome 44",
+          messageId: "incompatable",
+          data: { typeName: "Array.from()", browsers: "Chrome 44" },
         },
       ],
       options: [
@@ -523,8 +551,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "Promise.allSettled()",
       errors: [
         {
-          message:
-            "Promise.allSettled() is not supported in Safari 12, Chrome 72",
+          messageId: "incompatable",
+          data: { typeName: "Promise.allSettled()", browsers: "Safari 12, Chrome 72" },
         },
       ],
       options: [
@@ -542,7 +570,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "location.origin",
       errors: [
         {
-          message: "Location.origin() is not supported in Chrome 7",
+          messageId: "incompatable",
+          data: { typeName: "Location.origin()", browsers: "Chrome 7" },
         },
       ],
       options: [
@@ -555,8 +584,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "import { Map } from 'immutable';\n          new Set()",
       errors: [
         {
-          message: "Set is not supported in Chrome 37",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "Set", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -569,8 +599,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new Set()",
       errors: [
         {
-          message: "Set is not supported in Chrome 37",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "Set", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -583,8 +614,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new TypedArray()",
       errors: [
         {
-          message: "TypedArray is not supported in Chrome 6",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "TypedArray", browsers: "Chrome 6" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -597,8 +629,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new Int8Array()",
       errors: [
         {
-          message: "Int8Array is not supported in Chrome 6",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "Int8Array", browsers: "Chrome 6" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -611,8 +644,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new AnimationEvent",
       errors: [
         {
-          message: "AnimationEvent is not supported in Chrome 40",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "AnimationEvent", browsers: "Chrome 40" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -625,8 +659,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "Object.values({})",
       errors: [
         {
-          message: "Object.values() is not supported in Safari 9",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Object.values()", browsers: "Safari 9" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -639,8 +674,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new ServiceWorker()",
       errors: [
         {
-          message: "ServiceWorker is not supported in Chrome 31",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "ServiceWorker", browsers: "Chrome 31" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -653,8 +689,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new IntersectionObserver(() => {}, {});",
       errors: [
         {
-          message: "IntersectionObserver is not supported in Chrome 49",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "IntersectionObserver", browsers: "Chrome 49" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -667,9 +704,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "WebAssembly.compile()",
       errors: [
         {
-          message:
-            "WebAssembly.compile() is not supported in Samsung 4, Safari iOS 10.3, Safari 10.1, Opera 12.1, Edge 14, Chrome 23",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "WebAssembly.compile()", browsers: "Samsung 4, Safari iOS 10.3, Safari 10.1, Opera 12.1, Edge 14, Chrome 23" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -695,8 +732,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new PaymentRequest(methodData, details, options)",
       errors: [
         {
-          message: "PaymentRequest is not supported in Chrome 57",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "PaymentRequest", browsers: "Chrome 57" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -709,8 +747,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "navigator.serviceWorker",
       errors: [
         {
-          message: "Navigator.serviceWorker() is not supported in Safari 10.1",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Navigator.serviceWorker()", browsers: "Safari 10.1" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -723,8 +762,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "window.document.fonts()",
       errors: [
         {
-          message: "Document.fonts() is not supported in Chrome 34",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Document.fonts()", browsers: "Chrome 34" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -737,12 +777,14 @@ ruleTester.run("tscompat", tscompat, {
       code: "new Map().size",
       errors: [
         {
-          message: "Map.size() is not supported in Chrome 37",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Map.size()", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
         {
-          message: "Map is not supported in Chrome 37",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "Map", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -755,12 +797,14 @@ ruleTester.run("tscompat", tscompat, {
       code: "new window.Map().size",
       errors: [
         {
-          message: "Map.size() is not supported in Chrome 37",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Map.size()", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
         {
-          message: "window.Map() is not supported in Chrome 37",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "window.Map()", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -773,12 +817,14 @@ ruleTester.run("tscompat", tscompat, {
       code: "const m = new window.Map(); m.size",
       errors: [
         {
-          message: "window.Map() is not supported in Chrome 37",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "window.Map()", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
         {
-          message: "Map.size() is not supported in Chrome 37",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Map.size()", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -791,12 +837,14 @@ ruleTester.run("tscompat", tscompat, {
       code: "const m = new window.Map(); m.size()",
       errors: [
         {
-          message: "window.Map() is not supported in Chrome 37",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "window.Map()", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
         {
-          message: "Map.size() is not supported in Chrome 37",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Map.size()", browsers: "Chrome 37" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -809,8 +857,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new Array().flat",
       errors: [
         {
-          message: "Array.flat() is not supported in Chrome 68",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Array.flat()", browsers: "Chrome 68" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -823,8 +872,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "const a = new Array(); a.flat",
       errors: [
         {
-          message: "Array.flat() is not supported in Chrome 68",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Array.flat()", browsers: "Chrome 68" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -837,8 +887,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "const a = new Array(); a.flat()",
       errors: [
         {
-          message: "Array.flat() is not supported in Chrome 68",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Array.flat()", browsers: "Chrome 68" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -851,8 +902,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "globalThis.fetch()",
       errors: [
         {
-          message: "globalThis.fetch() is not supported in Chrome 39",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "globalThis.fetch()", browsers: "Chrome 39" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -865,8 +917,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "fetch()",
       errors: [
         {
-          message: "fetch() is not supported in Chrome 39",
-          type: "CallExpression",
+          messageId: "incompatable",
+          data: { typeName: "fetch()", browsers: "Chrome 39" },
+          type: AST_NODE_TYPES.CallExpression,
         },
       ],
       options: [
@@ -879,8 +932,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "Promise.resolve()",
       errors: [
         {
-          message: "Promise.resolve() is not supported in Chrome 31",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Promise.resolve()", browsers: "Chrome 31" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -893,8 +947,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "Promise.all()",
       errors: [
         {
-          message: "Promise.all() is not supported in Chrome 31",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Promise.all()", browsers: "Chrome 31" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -907,8 +962,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "Promise.race()",
       errors: [
         {
-          message: "Promise.race() is not supported in Chrome 31",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Promise.race()", browsers: "Chrome 31" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -921,8 +977,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "Promise.reject()",
       errors: [
         {
-          message: "Promise.reject() is not supported in Chrome 31",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Promise.reject()", browsers: "Chrome 31" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -935,8 +992,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new URL('http://example')",
       errors: [
         {
-          message: "URL is not supported in Safari 6, Firefox 18, Chrome 31",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "URL", browsers: "Safari 6, Firefox 18, Chrome 31" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -949,9 +1007,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new URLSearchParams()",
       errors: [
         {
-          message:
-            "URLSearchParams is not supported in Safari 10, Firefox 28, Chrome 48",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "URLSearchParams", browsers: "Safari 10, Firefox 28, Chrome 48" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [
@@ -964,8 +1022,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "performance.now()",
       errors: [
         {
-          message: "Performance.now() is not supported in Chrome 19",
-          type: "MemberExpression",
+          messageId: "incompatable",
+          data: { typeName: "Performance.now()", browsers: "Chrome 19" },
+          type: AST_NODE_TYPES.MemberExpression,
         },
       ],
       options: [
@@ -978,7 +1037,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "new ResizeObserver()",
       errors: [
         {
-          message: "ResizeObserver is not supported in Safari 12, Chrome 39",
+          messageId: "incompatable",
+          data: { typeName: "ResizeObserver", browsers: "Safari 12, Chrome 39" },
         },
       ],
       options: [
@@ -991,7 +1051,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "'foo'.at(5)",
       errors: [
         {
-          message: "String.at() is not supported in Safari 12, Chrome 39",
+          messageId: "incompatable",
+          data: { typeName: "String.at()", browsers: "Safari 12, Chrome 39" },
         },
       ],
       options: [
@@ -1004,7 +1065,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "const a = 'foo'; a.at(5)",
       errors: [
         {
-          message: "String.at() is not supported in Safari 12, Chrome 39",
+          messageId: "incompatable",
+          data: { typeName: "String.at()", browsers: "Safari 12, Chrome 39" },
         },
       ],
       options: [
@@ -1017,7 +1079,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "const a = []; a.at(5)",
       errors: [
         {
-          message: "Array.at() is not supported in Safari 12, Chrome 39",
+          messageId: "incompatable",
+          data: { typeName: "Array.at()", browsers: "Safari 12, Chrome 39" },
         },
       ],
       options: [
@@ -1030,7 +1093,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "[].at(5)",
       errors: [
         {
-          message: "Array.at() is not supported in Safari 12, Chrome 39",
+          messageId: "incompatable",
+          data: { typeName: "Array.at()", browsers: "Safari 12, Chrome 39" },
         },
       ],
       options: [
@@ -1043,12 +1107,12 @@ ruleTester.run("tscompat", tscompat, {
       code: "Object.entries({}), Object.values({})",
       errors: [
         {
-          message:
-            "Object.entries() is not supported in Android 4, Safari iOS 7",
+          messageId: "incompatable",
+          data: { typeName: "Object.entries()", browsers: "Android 4, Safari iOS 7" },
         },
         {
-          message:
-            "Object.values() is not supported in Android 4, Safari iOS 7",
+          messageId: "incompatable",
+          data: { typeName: "Object.values()", browsers: "Android 4, Safari iOS 7" },
         },
       ],
       options: [
@@ -1061,8 +1125,9 @@ ruleTester.run("tscompat", tscompat, {
       code: "new PaymentRequest([], { total: { label: 'Total', amount: { currency: 'USD', value: '1' } } })",
       errors: [
         {
-          message: "PaymentRequest is not supported in Firefox 130",
-          type: "NewExpression",
+          messageId: "incompatable",
+          data: { typeName: "PaymentRequest", browsers: "Firefox 130" },
+          type: AST_NODE_TYPES.NewExpression,
         },
       ],
       options: [{ browserslist: ["firefox 130"] }],
@@ -1071,7 +1136,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "window.requestIdleCallback(() => {})",
       errors: [
         {
-          message: "window.requestIdleCallback() is not supported in Safari 12",
+          messageId: "incompatable",
+          data: { typeName: "window.requestIdleCallback()", browsers: "Safari 12" },
         },
       ],
       options: [
@@ -1084,8 +1150,8 @@ ruleTester.run("tscompat", tscompat, {
       code: "window.requestAnimationFrame(() => {})",
       errors: [
         {
-          message:
-            "window.requestAnimationFrame() is not supported in Chrome 23",
+          messageId: "incompatable",
+          data: { typeName: "window.requestAnimationFrame()", browsers: "Chrome 23" },
         },
       ],
       options: [
@@ -1102,7 +1168,8 @@ ruleTester.run("tscompat", tscompat, {
           browserslist: ["chrome 121"],
         },
       ],
-      errors: [{ message: "Iterator.map() is not supported in Chrome 121" }],
+      errors: [{ messageId: "incompatable",
+          data: { typeName: "Iterator.map()", browsers: "Chrome 121" } }],
     },
   ],
 });
