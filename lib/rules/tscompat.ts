@@ -11,6 +11,7 @@ const { SymbolFlags } = typescript; // Import CJS module in ESM
 import type {
   BrowserName as MDNBrowserName,
   SimpleSupportStatement,
+  SupportStatement,
 } from "@mdn/browser-compat-data";
 import type { BrowsersListBrowserName } from "../../types.js";
 
@@ -130,9 +131,7 @@ function findSupport({
 }: {
   typeName: string | undefined;
   calleeName: string | undefined;
-}): Partial<
-  Record<MDNBrowserName, import("@mdn/browser-compat-data").SupportStatement>
-> {
+}): Partial<Record<MDNBrowserName, SimpleSupportStatement>> {
   // TODO: I hate this
   if (typeName === "typeof globalThis") {
     typeName = calleeName;
@@ -176,28 +175,25 @@ function findSupport({
 
   if (!support) return {};
 
-  // eslint-disable-next-line prefer-const
-  for (let [key, value] of Object.entries(support || {})) {
-    if (Array.isArray(value)) {
-      // @ts-expect-error TODO
-      value = value.find((x) => !x.prefix);
-    }
-    // @ts-expect-error TODO
-    value.version_added = value.version_added || Infinity;
-
-    // @ts-expect-error TODO
-    if (value.version_added !== Infinity) {
-      // @ts-expect-error TODO
-      support[key] = {
-        // For _some_ reason the dataset has these unicode characters.
-        // @ts-expect-error TODO
-        // eslint-disable-next-line
-        version_added: value.version_added.replace("≤", ""),
-      };
-    }
+  const normalized: Partial<Record<MDNBrowserName, SimpleSupportStatement>> =
+    {};
+  for (const [browser, statement] of Object.entries(support) as Array<
+    [MDNBrowserName, SupportStatement]
+  >) {
+    const statements = Array.isArray(statement) ? statement : [statement];
+    // Prefixed, flagged and preview-only support isn't available to users of a released browser.
+    const usable = statements.find(
+      (s) => !s.prefix && !s.flags && s.version_added !== "preview",
+    );
+    normalized[browser] = {
+      version_added: usable?.version_added
+        ? // For _some_ reason the dataset has these unicode characters.
+          usable.version_added.replace("≤", "")
+        : false,
+    };
   }
 
-  return support;
+  return normalized;
 }
 
 function formatBrowserList(
