@@ -7,6 +7,7 @@
     "lint": "eslint lib/ tests/ index.js",
     "typecheck": "tsc --noEmit",
     "build": "esbuild index.js lib/**/* --outdir=dist  --platform=node --format=esm",
+    "prepack": "npm run build",
     "test": "tsx --test  tests/tscompat.ts "
   },
   "exports": {
