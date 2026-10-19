@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "lint": "eslint lib/ tests/ index.js",
+    "typecheck": "tsc --noEmit",
     "build": "esbuild index.js lib/**/* --outdir=dist  --platform=node --format=esm",
     "test": "tsx --test  tests/tscompat.ts "
   },
@@ -33,6 +34,7 @@
     "esbuild": "^0.28.0",
     "eslint-plugin-eslint-plugin": "^7.0.0",
     "tsx": "^4.7.2",
+    "typescript": "~5.9",
     "typescript-eslint": "^8.0.0"
   }
 }

@@ -18,14 +18,17 @@ import type { BrowsersListBrowserName } from "../../types.js";
 import type { ParserServicesWithTypeInformation } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/typescript-estree";
 import type {
+  BaseType,
+  InterfaceType,
   Symbol as TSSymbol,
   Type,
   UnionOrIntersectionType,
   TypeChecker,
 } from "typescript";
-import type { SimpleSupportStatement } from "@mdn/browser-compat-data";
 
-const createRule = ESLintUtils.RuleCreator(
+type Options = [{ browserslist?: readonly string[] }?];
+
+const createRule = ESLintUtils.RuleCreator<{ recommended: boolean }>(
   (name) => `https://example.com/rule/${name}`,
 );
 
@@ -45,7 +48,7 @@ function getFailures({
   support,
   browserTargets,
 }: {
-  support: Record<MDNBrowserName, SimpleSupportStatement>;
+  support: Partial<Record<MDNBrowserName, SimpleSupportStatement>>;
   browserTargets: Partial<Record<MDNBrowserName, number>>;
 }): Array<{ name: MDNBrowserName; version: number; supportedSince: number }> {
   const supportFailures: Array<{
@@ -68,7 +71,7 @@ function getFailures({
     }
 
     // Otherwise, attempt to parse the version at which support was added.
-    const supportedSince = browserSupport.version_added === true ? 0 : Number.parseFloat(browserSupport.version_added);
+    const supportedSince = Number.parseFloat(browserSupport.version_added);
     if (!Number.isNaN(supportedSince) && version < supportedSince) {
       supportFailures.push({
         name: name as MDNBrowserName,
@@ -95,17 +98,14 @@ function browserslistToMdnNames(
     safari: "safari",
     samsung: "samsunginternet_android",
   };
-  for (const [name, value] of Object.entries(browserslistData)) {
-    // @ts-expect-error TODO
-    const newName = nameMap[name];
-    if (newName === name) continue;
-    // @ts-expect-error TODO
-    // eslint-disable-next-line
-    browserslistData[newName] = value;
-    // @ts-expect-error TODO
-    delete browserslistData[name];
+  const mdnData: Partial<Record<MDNBrowserName, number>> = {};
+  for (const [name, version] of Object.entries(browserslistData) as Array<
+    [BrowsersListBrowserName, number]
+  >) {
+    const mdnName = nameMap[name];
+    if (mdnName) mdnData[mdnName] = version;
   }
-  return browserslistData;
+  return mdnData;
 }
 
 function findBrowserTargets(
@@ -118,7 +118,8 @@ function findBrowserTargets(
       string,
     ];
     const parsedVersion = Number.parseFloat(version);
-    if (browsers[name] == null || browsers[name] > parsedVersion) {
+    const current = browsers[name];
+    if (current === undefined || current > parsedVersion) {
       browsers[name] = parsedVersion;
     }
   }
@@ -162,7 +163,7 @@ function findSupport({
   }
 
   // First check built-in types (e.g., Set, Array)
-  if (["Set", "Array", "Map"].includes(typeName) && calleeName) {
+  if (typeName && ["Set", "Array", "Map"].includes(typeName) && calleeName) {
     support =
       bcd.javascript.builtins[typeName]?.[calleeName]?.__compat?.support;
 
@@ -218,6 +219,14 @@ function formatBrowserList(
     .join(", ");
 }
 
+function getBaseTypes(checker: TypeChecker, type: Type): BaseType[] {
+  const symbol = type.getSymbol();
+  if (!symbol || !(symbol.getFlags() & (SymbolFlags.Class | SymbolFlags.Interface))) {
+    return [];
+  }
+  return checker.getBaseTypes(type as InterfaceType);
+}
+
 const replaceNameRegex = /<.*>/gmu;
 function convertToMDNName(checker: TypeChecker, type: Type): string {
   if (checker.isArrayType(type)) {
@@ -229,23 +238,10 @@ function convertToMDNName(checker: TypeChecker, type: Type): string {
     .replace("Constructor", "")
     .replace("typeof ", "");
 
-  // Safely check for base types
-  const symbol = type.getSymbol();
-  if (symbol) {
-    // Only check classes/interfaces
-    if (symbol.getFlags() & (SymbolFlags.Class | SymbolFlags.Interface)) {
-      // @ts-expect-error TS(2345): we check if its an interface above
-      const baseTypes = checker.getBaseTypes(type);
-      if (baseTypes) {
-        for (const baseType of baseTypes) {
-          const baseTypeName = convertToMDNName(checker, baseType);
-          if (
-            ["Set", "Array", "Map", "WeakMap", "WeakSet"].includes(baseTypeName)
-          ) {
-            return baseTypeName;
-          }
-        }
-      }
+  for (const baseType of getBaseTypes(checker, type)) {
+    const baseTypeName = convertToMDNName(checker, baseType);
+    if (["Set", "Array", "Map", "WeakMap", "WeakSet"].includes(baseTypeName)) {
+      return baseTypeName;
     }
   }
 
@@ -283,12 +279,7 @@ function getType(
     if (!found) {
       return checker.getAnyType();
     }
-    // @ts-expect-error todo
-    type = type.types
-      .map((type) => {
-        return { typeName: getTypeName(checker, type), type };
-      })
-      .find(({ typeName }) => typeName === "Window").type;
+    type = found.type;
   }
   return type;
 }
@@ -623,19 +614,14 @@ function isPolyfilled(
   );
 }
 
-export const tscompat = createRule({
+export const tscompat = createRule<Options, "incompatable">({
   create(context) {
     const services = ESLintUtils.getParserServices(context);
     const checker = services.program.getTypeChecker();
     const isFeatureGuarded = createGuardDetector(services, checker);
     const polyfills = getPolyfills(context.settings);
 
-    // @ts-expect-error TODO
-    const options = context.options[0];
-
-    // @ts-expect-error TODO
-    // eslint-disable-next-line
-    const browsers = browserslist(options?.browserslist);
+    const browsers = browserslist(context.options[0]?.browserslist);
 
     return {
       MemberExpression(node: TSESTree.MemberExpression) {
@@ -732,14 +718,11 @@ export const tscompat = createRule({
           }
         }
 
+        const calleeName = node.property.name;
         const checkType = (type: Type) => {
           const typeName = convertToMDNName(checker, type);
 
           if (!typeName || typeName === "{}") return;
-
-          // @ts-expect-error It's possible for the property of the member expression to not have a
-          // name. We should test for this. TODO
-          const calleeName = node.property.name;
           if (isPolyfilled(polyfills, typeName, calleeName)) return;
 
           const support = findSupport({ typeName, calleeName });
@@ -764,26 +747,21 @@ export const tscompat = createRule({
             return
           }
 
-          const symbol = type.getSymbol()
-          if (symbol && symbol.getFlags() & (SymbolFlags.Class | SymbolFlags.Interface)) {
-            const baseTypes = checker.getBaseTypes(type);
-            if (baseTypes) {
-              baseTypes.forEach((baseType) => checkType(baseType))
-            }
-          }
+          getBaseTypes(checker, type).forEach((baseType) => checkType(baseType));
         };
         const type = getType(checker, services, node.object);
         checkType(type);
       },
       NewExpression(node: TSESTree.NewExpression) {
         // If we are doing `window.Map()`, then let `MemberExpression` handle this.
-        // eslint-disable-next-line
         if (node.callee.type === AST_NODE_TYPES.MemberExpression) return;
 
         const type = getType(checker, services, node);
         let typeName = convertToMDNName(checker, type);
-        // @ts-expect-error TODO `name` can be undefined
-        typeName = typeName === "any" ? node.callee.name : typeName;
+        if (typeName === "any") {
+          typeName =
+            node.callee.type === AST_NODE_TYPES.Identifier ? node.callee.name : "";
+        }
 
         if (!typeName) return;
         if (isFeatureGuarded(node, node.callee)) return;
@@ -807,10 +785,9 @@ export const tscompat = createRule({
         }
       },
       CallExpression(node: TSESTree.CallExpression) {
-        // @ts-expect-error TODO `name` can be undefined
-        const typeName: string = node.callee.name;
+        if (node.callee.type !== AST_NODE_TYPES.Identifier) return;
+        const typeName = node.callee.name;
 
-        if (!typeName) return;
         if (isFeatureGuarded(node, node.callee)) return;
         if (isPolyfilled(polyfills, typeName)) return;
 
@@ -840,24 +817,24 @@ export const tscompat = createRule({
       url: "https://github.com/koddsson/eslint-config-tscompat",
       recommended: true,
     },
-    schema: {
-      type: "array",
-      items: [
-        {
-          type: "object",
-          properties: {
-            browserslist: {
-              type: "array",
-            },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          browserslist: {
+            description: "Browserslist queries for the browsers to check against.",
+            type: "array",
+            items: { type: "string" },
           },
-          additionalProperties: false,
         },
-      ],
-    },
+        additionalProperties: false,
+      },
+    ],
     defaultOptions: [{ browserslist: [">0.3%", "not dead"] }],
     messages: {
       incompatable: "{{typeName}} is not supported in {{browsers}}",
     },
+    languages: ["js/js"],
   },
   name: "tscompat",
   defaultOptions: [],

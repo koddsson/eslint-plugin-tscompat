@@ -14,7 +14,7 @@ export default tseslint.config(
     },
   },
   {
-    ...eslintPlugin.configs["flat/all-type-checked"],
+    ...eslintPlugin.configs["all-type-checked"],
   },
   {
     rules: {
