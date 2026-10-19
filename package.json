@@ -21,10 +21,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mdn/browser-compat-data": "^8.0.1",
-    "@typescript-eslint/type-utils": "^8.0.1",
-    "@typescript-eslint/utils": "^8.0.0",
-    "browserslist": "^4.23.0"
+    "@mdn/browser-compat-data": "^8.1.6",
+    "@typescript-eslint/type-utils": "^8.71.2",
+    "@typescript-eslint/utils": "^8.71.2",
+    "browserslist": "^4.29.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
