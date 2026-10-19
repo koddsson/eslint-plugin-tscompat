@@ -588,11 +588,47 @@ function createGuardDetector(
   };
 }
 
+const globalObjectTypeNames = new Set([
+  "Window",
+  "globalThis",
+  "typeof globalThis",
+]);
+
+function getPolyfills(settings: Record<string, unknown>): Set<string> {
+  const { polyfills } = settings;
+  return new Set(
+    Array.isArray(polyfills)
+      ? polyfills.filter((p): p is string => typeof p === "string")
+      : [],
+  );
+}
+
+function isPolyfilled(
+  polyfills: Set<string>,
+  typeName: string,
+  calleeName?: string,
+): boolean {
+  if (polyfills.size === 0) return false;
+  if (!calleeName) return polyfills.has(typeName);
+  if (globalObjectTypeNames.has(typeName)) {
+    return (
+      polyfills.has(calleeName) ||
+      polyfills.has(`${formatTypeName(typeName)}.${calleeName}`)
+    );
+  }
+  return (
+    polyfills.has(typeName) ||
+    polyfills.has(`${typeName}.${calleeName}`) ||
+    polyfills.has(`${typeName}.prototype.${calleeName}`)
+  );
+}
+
 export const tscompat = createRule({
   create(context) {
     const services = ESLintUtils.getParserServices(context);
     const checker = services.program.getTypeChecker();
     const isFeatureGuarded = createGuardDetector(services, checker);
+    const polyfills = getPolyfills(context.settings);
 
     // @ts-expect-error TODO
     const options = context.options[0];
@@ -639,7 +675,7 @@ export const tscompat = createRule({
             }
           }
 
-          if (!baseTypeName) {
+          if (!baseTypeName || isPolyfilled(polyfills, baseTypeName)) {
             return;
           }
 
@@ -704,6 +740,7 @@ export const tscompat = createRule({
           // @ts-expect-error It's possible for the property of the member expression to not have a
           // name. We should test for this. TODO
           const calleeName = node.property.name;
+          if (isPolyfilled(polyfills, typeName, calleeName)) return;
 
           const support = findSupport({ typeName, calleeName });
           const browserTargets = findBrowserTargets(browsers);
@@ -750,6 +787,7 @@ export const tscompat = createRule({
 
         if (!typeName) return;
         if (isFeatureGuarded(node, node.callee)) return;
+        if (isPolyfilled(polyfills, typeName)) return;
 
         const support = findSupport({ typeName, calleeName: undefined });
         const browserTargets = findBrowserTargets(browsers);
@@ -774,6 +812,7 @@ export const tscompat = createRule({
 
         if (!typeName) return;
         if (isFeatureGuarded(node, node.callee)) return;
+        if (isPolyfilled(polyfills, typeName)) return;
 
         const support = findSupport({ typeName, calleeName: undefined });
         const browserTargets = findBrowserTargets(browsers);

@@ -29,6 +29,10 @@ export default [
         { browserslist: [">0.3%", "last 2 versions", "not dead"] },
       ],
     },
+    settings: {
+      // APIs you polyfill, see docs/rules/tscompat.md
+      polyfills: ["fetch", "Promise.allSettled"],
+    },
     languageOptions: {
       parser,
       parserOptions: {
