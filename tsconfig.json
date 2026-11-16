@@ -4,7 +4,8 @@
     "module": "nodenext",
     "lib": ["DOM", "ESNEXT"],
     "types": ["node"],
-    "checkJs": true
+    "checkJs": true,
+    "skipLibCheck": true
   },
   "include": ["tests", "lib", "*.js", "*.ts"]
 }
