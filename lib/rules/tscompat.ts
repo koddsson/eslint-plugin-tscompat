@@ -1,4 +1,4 @@
-import { ESLintUtils } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
 import { getTypeName } from "@typescript-eslint/type-utils";
 import bcd from "@mdn/browser-compat-data" with { type: "json" };
 import browserslist from "browserslist";
@@ -16,7 +16,6 @@ import type {
 import type { BrowsersListBrowserName } from "../../types.js";
 
 import type { ParserServicesWithTypeInformation } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/typescript-estree";
 import type {
   BaseType,
   InterfaceType,
